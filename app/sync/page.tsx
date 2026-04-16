@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 
 const APPS_SCRIPT_CODE = `function doGet(e) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('List');
-    if (!sheet) return err('Sheet "List" not found');
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ListWeb');
+    if (!sheet) return err('Sheet "ListWeb" not found');
     const data = sheet.getDataRange().getValues();
     const rows = data.slice(1).filter(r => r[2] || r[3]).map(r => ({
       week: r[0] || null,
@@ -25,8 +25,8 @@ const APPS_SCRIPT_CODE = `function doGet(e) {
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('List');
-    if (!sheet) return err('Sheet "List" not found');
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ListWeb');
+    if (!sheet) return err('Sheet "ListWeb" not found');
 
     const toRow = r => [r.week || '', r.no || '', r.en, r.vn, r.source || '', r.note || '', '', r.status || 'NO', r.used || 0];
 
@@ -150,7 +150,7 @@ export default function SyncPage() {
     if (action === 'replace') {
       if (
         !confirm(
-          'Replace ALL rows in your Google Sheet "List" tab? This clears existing rows first.'
+          'Replace ALL rows in your Google Sheet "ListWeb" tab? This clears existing rows first.'
         )
       )
         return
@@ -236,7 +236,7 @@ export default function SyncPage() {
           <ol className="list-decimal list-inside space-y-2 text-sm text-muted">
             <li>
               Open your Google Sheet (must have a tab named{' '}
-              <span className="font-mono text-foreground">List</span>)
+              <span className="font-mono text-foreground">ListWeb</span>)
             </li>
             <li>
               Menu: <span className="font-mono text-foreground">Extensions → Apps Script</span>
@@ -320,7 +320,7 @@ export default function SyncPage() {
             <h3 className="font-semibold mb-1 text-foreground">Push from App → Sheets</h3>
             <p className="text-xs text-muted mb-3">
               Writes app data to your Google Sheet&apos;s{' '}
-              <span className="font-mono">List</span> tab.
+              <span className="font-mono">ListWeb</span> tab.
             </p>
             <div className="flex gap-2 flex-wrap">
               <button

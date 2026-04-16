@@ -173,7 +173,7 @@ export default function VocabGrid({
         <button
           onClick={handleSave}
           disabled={saving || filledRows.length === 0}
-          className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-light disabled:opacity-50 transition"
+          className="px-6 py-2 bg-foreground text-background rounded-lg font-medium hover:opacity-80 disabled:opacity-50 transition"
         >
           {saving ? 'Saving...' : `Save ${filledRows.length} vocab`}
         </button>

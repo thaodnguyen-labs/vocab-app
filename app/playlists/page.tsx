@@ -97,7 +97,7 @@ export default function PlaylistsPage() {
     if (result.error) {
       setMessage(`Error: ${result.error}`)
     } else {
-      setMessage(`Playlist "${playlistName}" created!`)
+      setMessage(`Playlist "${playlistName}" created`)
       setPlaylistName('')
       setSelectedIds(new Set())
       setShowCreate(false)
@@ -106,7 +106,10 @@ export default function PlaylistsPage() {
     setCreating(false)
   }
 
-  const generateAudio = async (playlist: Playlist) => {
+  const generateAudio = async (playlist: Playlist, isRegenerate = false) => {
+    if (isRegenerate) {
+      if (!confirm(`Regenerate audio for "${playlist.name}"? This will overwrite the current audio file.`)) return
+    }
     setGenerating(playlist.id)
     setMessage('')
 
@@ -130,7 +133,7 @@ export default function PlaylistsPage() {
     if (result.error) {
       setMessage(`Error generating audio: ${result.error}`)
     } else {
-      setMessage('Audio generated! Go to Player to listen.')
+      setMessage(isRegenerate ? 'Audio regenerated' : 'Audio generated')
       loadPlaylists()
     }
   }
@@ -150,11 +153,11 @@ export default function PlaylistsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1 text-foreground">Playlists</h1>
-          <p className="text-sm text-muted">Create playlists, learn & listen</p>
+          <p className="text-sm text-muted">Create, learn, and listen</p>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="px-4 py-2 bg-primary-dark text-white rounded-lg text-sm font-medium hover:bg-primary transition"
+          className="px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-80 transition"
         >
           {showCreate ? 'Cancel' : '+ New'}
         </button>
@@ -163,14 +166,13 @@ export default function PlaylistsPage() {
       {message && (
         <p
           className={`text-sm mb-4 ${
-            message.startsWith('Error') ? 'text-danger' : 'text-primary-dark font-medium'
+            message.startsWith('Error') ? 'text-danger' : 'text-foreground font-medium'
           }`}
         >
           {message}
         </p>
       )}
 
-      {/* Create playlist form */}
       {showCreate && (
         <div className="bg-card border border-border rounded-xl p-4 mb-6">
           <h3 className="font-semibold mb-3 text-foreground">Create New Playlist</h3>
@@ -180,19 +182,18 @@ export default function PlaylistsPage() {
             placeholder="Playlist name (e.g. 'Week 15 Review')"
             value={playlistName}
             onChange={(e) => setPlaylistName(e.target.value)}
-            className="w-full text-sm px-3 py-2 border border-border rounded-lg mb-3 bg-near-white focus:outline-none focus:border-primary-dark text-foreground"
+            className="w-full text-sm px-3 py-2 border border-border rounded-lg mb-3 bg-near-white focus:outline-none focus:border-foreground text-foreground"
           />
 
-          {/* Filter buttons */}
           <div className="flex gap-2 mb-3">
             {(['all', 'new', 'learned'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`text-xs px-3 py-1 rounded-full transition font-medium ${
+                className={`text-xs px-3 py-1 rounded-full transition font-medium border ${
                   filter === f
-                    ? 'bg-primary-dark text-white'
-                    : 'bg-row-alt text-muted hover:bg-border'
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'bg-card text-muted border-border hover:border-foreground'
                 }`}
               >
                 {f === 'all'
@@ -204,7 +205,6 @@ export default function PlaylistsPage() {
             ))}
           </div>
 
-          {/* Preset size buttons */}
           <p className="text-xs text-muted mb-1">Quick pick random from {filter}:</p>
           <div className="flex gap-2 flex-wrap mb-3">
             {PRESET_SIZES.map((n) => (
@@ -212,14 +212,14 @@ export default function PlaylistsPage() {
                 key={n}
                 onClick={() => selectRandom(n)}
                 disabled={n > filteredVocab.length}
-                className="text-sm px-3 py-1.5 bg-accent text-foreground rounded-lg hover:bg-primary disabled:opacity-30 disabled:cursor-not-allowed transition font-medium"
+                className="text-sm px-3 py-1.5 bg-row-alt text-foreground border border-border rounded-lg hover:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition font-medium"
               >
                 {n}
               </button>
             ))}
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="text-sm px-3 py-1.5 bg-row-alt text-muted rounded-lg hover:bg-border transition"
+              className="text-sm px-3 py-1.5 text-muted rounded-lg hover:bg-row-alt transition"
             >
               Clear
             </button>
@@ -234,12 +234,12 @@ export default function PlaylistsPage() {
                 onClick={() => toggleVocab(v.id)}
                 className={`w-full text-left px-3 py-2 text-sm border-b border-border last:border-0 transition ${
                   selectedIds.has(v.id)
-                    ? 'bg-accent text-foreground'
+                    ? 'bg-row-alt text-foreground font-medium'
                     : 'hover:bg-row-alt text-foreground'
                 }`}
               >
-                <span className="font-medium">{v.en}</span>
-                <span className="text-muted ml-2">- {v.vn}</span>
+                <span>{v.en}</span>
+                <span className="text-muted ml-2">— {v.vn}</span>
               </button>
             ))}
           </div>
@@ -247,14 +247,13 @@ export default function PlaylistsPage() {
           <button
             onClick={createPlaylist}
             disabled={creating || !playlistName.trim() || selectedIds.size === 0}
-            className="mt-3 w-full py-2 bg-primary-dark text-white rounded-lg font-medium disabled:opacity-50 hover:bg-primary transition"
+            className="mt-3 w-full py-2 bg-foreground text-background rounded-lg font-medium disabled:opacity-50 hover:opacity-80 transition"
           >
             {creating ? 'Creating...' : 'Create Playlist'}
           </button>
         </div>
       )}
 
-      {/* Existing playlists */}
       {loading ? (
         <div className="space-y-3">
           {[...Array(2)].map((_, i) => (
@@ -265,64 +264,60 @@ export default function PlaylistsPage() {
           ))}
         </div>
       ) : playlists.length === 0 ? (
-        <div className="text-center py-12 text-muted">
-          <p className="text-4xl mb-2">#</p>
-          <p>No playlists yet. Create one above!</p>
+        <div className="text-center py-12 text-muted text-sm">
+          No playlists yet. Create one above.
         </div>
       ) : (
         <div className="space-y-3">
           {playlists.map((p) => (
             <div key={p.id} className="bg-card border border-border rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1">
                 <h3 className="font-semibold text-foreground">{p.name}</h3>
                 <button
                   onClick={() => deletePlaylist(p.id, p.name)}
-                  className="text-xs px-2 py-1 text-danger hover:bg-danger/10 rounded transition"
-                  title="Delete playlist"
+                  className="text-xs px-2 py-1 text-danger hover:bg-row-alt rounded transition"
                 >
                   Delete
                 </button>
               </div>
               <p className="text-xs text-muted mb-3">
                 {p.playlist_items?.length || 0} sentences
-                {p.audio_url && ' · Audio ready'}
+                {p.audio_url && ' · audio ready'}
               </p>
 
               <div className="flex flex-wrap gap-2">
                 <Link
                   href={`/learn/${p.id}`}
-                  className="text-xs px-3 py-1.5 bg-primary text-foreground rounded-lg hover:bg-accent font-medium transition"
+                  className="text-xs px-3 py-1.5 bg-foreground text-background rounded-lg hover:opacity-80 font-medium transition"
                 >
                   Learn
                 </Link>
                 {p.audio_url ? (
-                  <Link
-                    href={`/player?id=${p.id}`}
-                    className="text-xs px-3 py-1.5 bg-primary-dark text-white rounded-lg hover:bg-primary font-medium transition"
-                  >
-                    Play Audio
-                  </Link>
+                  <>
+                    <Link
+                      href={`/player?id=${p.id}`}
+                      className="text-xs px-3 py-1.5 bg-row-alt text-foreground border border-border rounded-lg hover:bg-border font-medium transition"
+                    >
+                      Play Audio
+                    </Link>
+                    <button
+                      onClick={() => generateAudio(p, true)}
+                      disabled={generating === p.id}
+                      className="text-xs px-3 py-1.5 text-muted hover:text-foreground rounded-lg disabled:opacity-50 font-medium transition"
+                    >
+                      {generating === p.id ? 'Regenerating...' : 'Regenerate'}
+                    </button>
+                  </>
                 ) : (
                   <button
                     onClick={() => generateAudio(p)}
                     disabled={generating === p.id}
-                    className="text-xs px-3 py-1.5 bg-accent text-foreground rounded-lg hover:bg-primary disabled:opacity-50 font-medium transition"
+                    className="text-xs px-3 py-1.5 bg-row-alt text-foreground border border-border rounded-lg hover:bg-border disabled:opacity-50 font-medium transition"
                   >
                     {generating === p.id ? 'Generating...' : 'Generate Audio'}
                   </button>
                 )}
               </div>
-
-              {p.playlist_items?.slice(0, 2).map((item, i) => (
-                <p key={i} className="text-xs text-muted mt-2 truncate">
-                  {i + 1}. {item.vocab.en}
-                </p>
-              ))}
-              {(p.playlist_items?.length || 0) > 2 && (
-                <p className="text-xs text-muted mt-1">
-                  ...and {p.playlist_items.length - 2} more
-                </p>
-              )}
             </div>
           ))}
         </div>

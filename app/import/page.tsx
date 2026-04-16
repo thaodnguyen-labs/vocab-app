@@ -202,7 +202,7 @@ export default function ImportPage() {
         <button
           onClick={() => fileRef.current?.click()}
           disabled={parsing}
-          className="px-6 py-3 bg-primary-dark text-white rounded-lg font-medium hover:bg-primary disabled:opacity-50 transition"
+          className="px-6 py-3 bg-foreground text-background rounded-lg font-medium hover:opacity-80 disabled:opacity-50 transition"
         >
           {parsing ? 'Loading...' : 'Choose File (.xlsx, .csv)'}
         </button>
@@ -218,7 +218,7 @@ export default function ImportPage() {
         <input
           type="text"
           placeholder="https://docs.google.com/spreadsheets/d/..."
-          className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-near-white focus:outline-none focus:border-primary-dark text-foreground"
+          className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-near-white focus:outline-none focus:border-foreground text-foreground"
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleGoogleSheet((e.target as HTMLInputElement).value.trim())
           }}
@@ -238,7 +238,7 @@ export default function ImportPage() {
                 onClick={() => handleSheetChange(name)}
                 className={`text-sm px-3 py-1 rounded-lg transition font-medium ${
                   selectedSheet === name
-                    ? 'bg-primary-dark text-white'
+                    ? 'bg-foreground text-background'
                     : 'bg-row-alt text-muted hover:bg-border'
                 }`}
               >
@@ -255,7 +255,7 @@ export default function ImportPage() {
             message.startsWith('Error') || message.startsWith('Failed')
               ? 'text-danger'
               : message.startsWith('Success')
-              ? 'text-primary-dark font-medium'
+              ? 'text-foreground font-medium'
               : 'text-muted'
           }`}
         >
@@ -272,7 +272,7 @@ export default function ImportPage() {
             <button
               onClick={handleImport}
               disabled={importing}
-              className="px-6 py-2 bg-primary-dark text-white rounded-lg font-medium hover:bg-primary disabled:opacity-50 transition"
+              className="px-6 py-2 bg-foreground text-background rounded-lg font-medium hover:opacity-80 disabled:opacity-50 transition"
             >
               {importing ? 'Importing...' : `Import ${parsedData.length}`}
             </button>

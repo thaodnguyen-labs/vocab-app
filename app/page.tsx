@@ -37,81 +37,69 @@ export default function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-1 text-foreground">Vocab Practice</h1>
-      <p className="text-sm text-muted mb-6">Your English vocabulary dashboard</p>
+      <p className="text-sm text-muted mb-6">English vocabulary dashboard</p>
 
-      {/* Stats cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-primary-dark">{loading ? '-' : stats.total}</p>
-          <p className="text-xs text-muted">Total Vocab</p>
+          <p className="text-2xl font-bold text-foreground">{loading ? '—' : stats.total}</p>
+          <p className="text-xs text-muted mt-1">Total</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-primary-dark">{loading ? '-' : stats.learned}</p>
-          <p className="text-xs text-muted">Learned</p>
+          <p className="text-2xl font-bold text-foreground">{loading ? '—' : stats.learned}</p>
+          <p className="text-xs text-muted mt-1">Learned</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-primary-dark">
-            {loading ? '-' : stats.playlists}
+          <p className="text-2xl font-bold text-foreground">
+            {loading ? '—' : stats.playlists}
           </p>
-          <p className="text-xs text-muted">Playlists</p>
+          <p className="text-xs text-muted mt-1">Playlists</p>
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="bg-card border border-border rounded-xl p-4 mb-6">
         <div className="flex justify-between text-sm mb-2">
           <span className="font-medium text-foreground">Progress</span>
           <span className="text-muted">{progress}%</span>
         </div>
-        <div className="h-3 bg-row-alt rounded-full overflow-hidden">
+        <div className="h-2 bg-row-alt rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-primary to-primary-dark rounded-full transition-all duration-500"
+            className="h-full bg-foreground rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <Link
           href="/vocab"
-          className="bg-card border border-border rounded-xl p-4 hover:border-primary-dark transition group"
+          className="bg-card border border-border rounded-xl p-4 hover:border-foreground transition"
         >
-          <p className="font-semibold text-sm group-hover:text-primary-dark text-foreground">
-            + Add Vocab
-          </p>
-          <p className="text-xs text-muted">Add new sentences</p>
+          <p className="font-semibold text-sm text-foreground">Add Vocab</p>
+          <p className="text-xs text-muted mt-0.5">Add new sentences</p>
         </Link>
         <Link
-          href="/import"
-          className="bg-card border border-border rounded-xl p-4 hover:border-primary-dark transition group"
+          href="/sync"
+          className="bg-card border border-border rounded-xl p-4 hover:border-foreground transition"
         >
-          <p className="font-semibold text-sm group-hover:text-primary-dark text-foreground">
-            ^ Import
-          </p>
-          <p className="text-xs text-muted">From Excel/Sheets</p>
+          <p className="font-semibold text-sm text-foreground">Sync</p>
+          <p className="text-xs text-muted mt-0.5">Google Sheets sync</p>
         </Link>
         <Link
           href="/playlists"
-          className="bg-card border border-border rounded-xl p-4 hover:border-primary-dark transition group"
+          className="bg-card border border-border rounded-xl p-4 hover:border-foreground transition"
         >
-          <p className="font-semibold text-sm group-hover:text-primary-dark text-foreground">
-            # Playlists
-          </p>
-          <p className="text-xs text-muted">Manage & learn</p>
+          <p className="font-semibold text-sm text-foreground">Playlists</p>
+          <p className="text-xs text-muted mt-0.5">Create & learn</p>
         </Link>
         <Link
           href="/player"
-          className="bg-card border border-border rounded-xl p-4 hover:border-primary-dark transition group"
+          className="bg-card border border-border rounded-xl p-4 hover:border-foreground transition"
         >
-          <p className="font-semibold text-sm group-hover:text-primary-dark text-foreground">
-            &gt; Player
-          </p>
-          <p className="text-xs text-muted">Listen & loop</p>
+          <p className="font-semibold text-sm text-foreground">Player</p>
+          <p className="text-xs text-muted mt-0.5">Listen & loop</p>
         </Link>
       </div>
 
-      {/* Recent vocab */}
       {!loading && recentVocab.length > 0 && (
         <div>
           <h2 className="font-semibold text-sm mb-2 text-foreground">Recently Added</h2>
@@ -119,11 +107,11 @@ export default function Dashboard() {
             {recentVocab.map((v) => (
               <div
                 key={v.id}
-                className="bg-card border border-border rounded-lg p-3 flex items-start gap-2"
+                className="bg-card border border-border rounded-lg p-3 flex items-start gap-3"
               >
                 <span
-                  className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${
-                    v.status === 'YES' ? 'bg-primary-dark' : 'bg-border'
+                  className={`shrink-0 w-1.5 h-1.5 rounded-full mt-2 ${
+                    v.status === 'YES' ? 'bg-foreground' : 'bg-border'
                   }`}
                 />
                 <div className="min-w-0">

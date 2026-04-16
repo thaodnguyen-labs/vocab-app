@@ -1,0 +1,261 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+
+const APPS_SCRIPT_CODE = `function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('List');
+  if (!sheet) return err('Sheet "List" not found');
+  const data = sheet.getDataRange().getValues();
+  const rows = data.slice(1).filter(r => r[2] || r[3]).map(r => ({
+    week: r[0] || null,
+    en: String(r[2] || '').trim(),
+    vn: String(r[3] || '').trim(),
+    source: String(r[4] || '').trim(),
+    note: String(r[5] || '').trim(),
+    status: String(r[7] || 'NO').trim(),
+    used: Number(r[8]) || 0,
+  }));
+  return ok({data: rows});
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('List');
+    if (!sheet) return err('Sheet "List" not found');
+
+    const toRow = r => [r.week || '', r.no || '', r.en, r.vn, r.source || '', r.note || '', '', r.status || 'NO', r.used || 0];
+
+    if (body.action === 'replace') {
+      const last = sheet.getLastRow();
+      if (last > 1) sheet.getRange(2, 1, last - 1, 9).clearContent();
+    }
+    const rows = body.rows.map(toRow);
+    if (rows.length > 0) {
+      const startRow = sheet.getLastRow() + 1;
+      sheet.getRange(startRow, 1, rows.length, 9).setValues(rows);
+    }
+    return ok({written: rows.length});
+  } catch (error) {
+    return err(error.toString());
+  }
+}
+
+function ok(data) {
+  return ContentService.createTextOutput(JSON.stringify(Object.assign({success: true}, data)))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function err(msg) {
+  return ContentService.createTextOutput(JSON.stringify({error: msg}))
+    .setMimeType(ContentService.MimeType.JSON);
+}`
+
+export default function SyncPage() {
+  const [scriptUrl, setScriptUrl] = useState('')
+  const [savedUrl, setSavedUrl] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [pulling, setPulling] = useState(false)
+  const [pushing, setPushing] = useState(false)
+  const [message, setMessage] = useState('')
+  const [showSetup, setShowSetup] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then((d) => {
+        const url = d.settings?.sheets_script_url || ''
+        setSavedUrl(url)
+        setScriptUrl(url)
+      })
+  }, [])
+
+  const saveUrl = async () => {
+    setSaving(true)
+    setMessage('')
+    const res = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'sheets_script_url', value: scriptUrl.trim() }),
+    })
+    const result = await res.json()
+    if (result.error) {
+      setMessage(`Error: ${result.error}`)
+    } else {
+      setSavedUrl(scriptUrl.trim())
+      setMessage('URL saved')
+    }
+    setSaving(false)
+  }
+
+  const pull = async () => {
+    setPulling(true)
+    setMessage('Pulling from Google Sheets...')
+    const res = await fetch('/api/sync/pull', { method: 'POST' })
+    const result = await res.json()
+    if (result.error) {
+      setMessage(`Error: ${result.error}`)
+    } else {
+      setMessage(
+        `Pulled ${result.total} rows. Added ${result.added}, updated ${result.updated}.`
+      )
+    }
+    setPulling(false)
+  }
+
+  const push = async (action: 'append' | 'replace') => {
+    if (action === 'replace') {
+      if (!confirm('Replace ALL rows in your Google Sheet "List" tab? This clears existing rows first.')) return
+    }
+    setPushing(true)
+    setMessage(`Pushing to Google Sheets (${action})...`)
+    const res = await fetch('/api/sync/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    const result = await res.json()
+    if (result.error) {
+      setMessage(`Error: ${result.error}`)
+    } else {
+      setMessage(`Pushed ${result.count} rows (${action}).`)
+    }
+    setPushing(false)
+  }
+
+  const copyScript = () => {
+    navigator.clipboard.writeText(APPS_SCRIPT_CODE)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-1 text-foreground">Google Sheets Sync</h1>
+      <p className="text-sm text-muted mb-6">Bidirectional sync with your Google Sheet</p>
+
+      {/* Script URL config */}
+      <div className="bg-card border border-border rounded-xl p-4 mb-4">
+        <label className="text-sm font-medium block mb-2 text-foreground">
+          Apps Script Web App URL
+        </label>
+        <input
+          type="text"
+          placeholder="https://script.google.com/macros/s/.../exec"
+          value={scriptUrl}
+          onChange={(e) => setScriptUrl(e.target.value)}
+          className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-near-white focus:outline-none focus:border-foreground text-foreground font-mono"
+        />
+        <div className="flex items-center justify-between mt-3">
+          <button
+            onClick={() => setShowSetup(!showSetup)}
+            className="text-xs text-muted hover:text-foreground underline"
+          >
+            {showSetup ? 'Hide' : 'Show'} setup instructions
+          </button>
+          <button
+            onClick={saveUrl}
+            disabled={saving || scriptUrl === savedUrl}
+            className="text-sm px-4 py-1.5 bg-foreground text-background rounded-lg font-medium disabled:opacity-50 hover:opacity-80 transition"
+          >
+            {saving ? 'Saving...' : 'Save URL'}
+          </button>
+        </div>
+      </div>
+
+      {/* Setup instructions */}
+      {showSetup && (
+        <div className="bg-card border border-border rounded-xl p-4 mb-4 text-sm text-foreground">
+          <h3 className="font-semibold mb-2">One-time setup (~2 minutes)</h3>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-muted">
+            <li>Open your Google Sheet (must have a tab named <span className="font-mono text-foreground">List</span>)</li>
+            <li>Menu: <span className="font-mono text-foreground">Extensions → Apps Script</span></li>
+            <li>Delete the default code. Paste the script below (click Copy)</li>
+            <li>Save (disk icon or Ctrl/Cmd+S)</li>
+            <li>Click <span className="font-mono text-foreground">Deploy → New deployment</span></li>
+            <li>Click gear icon → Select <span className="font-mono text-foreground">Web app</span></li>
+            <li>Execute as: <span className="font-mono text-foreground">Me</span></li>
+            <li>Who has access: <span className="font-mono text-foreground">Anyone</span></li>
+            <li>Click Deploy → Authorize → Copy the <span className="font-mono text-foreground">Web app URL</span></li>
+            <li>Paste the URL above and save</li>
+          </ol>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-muted uppercase tracking-wide">
+                Apps Script Code
+              </span>
+              <button
+                onClick={copyScript}
+                className="text-xs px-3 py-1 bg-foreground text-background rounded transition hover:opacity-80"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <pre className="bg-row-alt border border-border rounded-lg p-3 text-xs overflow-x-auto font-mono text-foreground max-h-60 overflow-y-auto">
+              {APPS_SCRIPT_CODE}
+            </pre>
+          </div>
+
+          <p className="text-xs text-muted mt-4">
+            <strong className="text-foreground">Note:</strong> The script expects your sheet to have columns
+            A=Week, B=No, C=EN, D=VN, E=Source, F=Note, H=Status, I=Used (matches your existing format).
+          </p>
+        </div>
+      )}
+
+      {/* Sync buttons */}
+      {savedUrl && (
+        <div className="space-y-3">
+          <div className="bg-card border border-border rounded-xl p-4">
+            <h3 className="font-semibold mb-1 text-foreground">Pull from Sheets → App</h3>
+            <p className="text-xs text-muted mb-3">
+              Reads your Google Sheet. New rows are added. Existing rows (matched by English
+              text) have their status/used/notes updated.
+            </p>
+            <button
+              onClick={pull}
+              disabled={pulling}
+              className="px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 transition"
+            >
+              {pulling ? 'Pulling...' : 'Pull from Sheets'}
+            </button>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-4">
+            <h3 className="font-semibold mb-1 text-foreground">Push from App → Sheets</h3>
+            <p className="text-xs text-muted mb-3">
+              Writes app data to your Google Sheet&apos;s <span className="font-mono">List</span> tab.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => push('append')}
+                disabled={pushing}
+                className="px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 transition"
+              >
+                {pushing ? 'Pushing...' : 'Append to Sheet'}
+              </button>
+              <button
+                onClick={() => push('replace')}
+                disabled={pushing}
+                className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 transition"
+              >
+                Replace All Rows
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {message && (
+        <p
+          className={`text-sm mt-4 ${
+            message.startsWith('Error') ? 'text-danger' : 'text-foreground font-medium'
+          }`}
+        >
+          {message}
+        </p>
+      )}
+    </div>
+  )
+}

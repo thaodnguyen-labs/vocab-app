@@ -15,7 +15,10 @@ interface AudioPlayerProps {
   title: string
 }
 
-const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2]
+const MIN_SPEED = 0.7
+const MAX_SPEED = 1.25
+const SPEED_STEP = 0.05
+const DEFAULT_SPEED = 0.9
 
 export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -25,14 +28,12 @@ export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerP
   const [currentCueIndex, setCurrentCueIndex] = useState(0)
   const [loop, setLoop] = useState(true)
   const [showVN, setShowVN] = useState(true)
-  const [speed, setSpeed] = useState(1)
+  const [speed, setSpeed] = useState(DEFAULT_SPEED)
 
-  // Apply speed change
   useEffect(() => {
     if (audioRef.current) audioRef.current.playbackRate = speed
   }, [speed])
 
-  // Set up Media Session API for lock screen controls
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
 
@@ -130,10 +131,13 @@ export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerP
     audio.currentTime = parseFloat(e.target.value)
   }
 
-  const cycleSpeed = () => {
-    const currentIdx = SPEED_OPTIONS.indexOf(speed)
-    const nextIdx = (currentIdx + 1) % SPEED_OPTIONS.length
-    setSpeed(SPEED_OPTIONS[nextIdx])
+  const adjustSpeed = (delta: number) => {
+    setSpeed((s) => {
+      const next = Math.round((s + delta) * 100) / 100
+      if (next < MIN_SPEED) return MIN_SPEED
+      if (next > MAX_SPEED) return MAX_SPEED
+      return next
+    })
   }
 
   const formatTime = (t: number) => {
@@ -145,10 +149,10 @@ export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerP
   const currentCue = cuePoints[currentCueIndex]
 
   return (
-    <div className="bg-card rounded-2xl shadow-lg p-6 max-w-lg mx-auto border border-border">
+    <div className="bg-card rounded-2xl shadow-sm p-6 max-w-lg mx-auto border border-border">
       <audio ref={audioRef} src={audioUrl} preload="auto" />
 
-      <h2 className="text-lg font-bold text-center mb-1 text-foreground">{title}</h2>
+      <h2 className="text-base font-semibold text-center mb-1 text-foreground">{title}</h2>
       <p className="text-xs text-muted text-center mb-6">
         {cuePoints.length} sentences {loop ? '· looping' : ''}
       </p>
@@ -179,52 +183,77 @@ export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerP
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-6 mb-4">
+      <div className="flex items-center justify-center gap-6 mb-5">
         <button
           onClick={() => skipTo(currentCueIndex - 1)}
-          className="w-10 h-10 rounded-full bg-border hover:bg-accent flex items-center justify-center text-sm font-semibold transition"
+          className="w-10 h-10 rounded-full bg-row-alt hover:bg-border flex items-center justify-center text-sm font-semibold transition text-foreground"
           title="Previous sentence"
         >
           &lt;&lt;
         </button>
         <button
           onClick={togglePlay}
-          className="w-14 h-14 rounded-full bg-primary-dark text-white flex items-center justify-center text-2xl hover:bg-primary transition shadow-md font-bold"
+          className="w-14 h-14 rounded-full bg-foreground text-background flex items-center justify-center text-2xl hover:opacity-80 transition shadow-sm font-bold"
         >
           {isPlaying ? '||' : '>'}
         </button>
         <button
           onClick={() => skipTo(currentCueIndex + 1)}
-          className="w-10 h-10 rounded-full bg-border hover:bg-accent flex items-center justify-center text-sm font-semibold transition"
+          className="w-10 h-10 rounded-full bg-row-alt hover:bg-border flex items-center justify-center text-sm font-semibold transition text-foreground"
           title="Next sentence"
         >
           &gt;&gt;
         </button>
       </div>
 
-      <div className="flex justify-center gap-2 flex-wrap">
+      {/* Speed control with +/- buttons */}
+      <div className="flex items-center justify-center gap-1 mb-4 bg-row-alt rounded-full p-1 w-fit mx-auto">
         <button
-          onClick={cycleSpeed}
-          className="text-xs px-3 py-1.5 rounded-full bg-primary text-foreground font-medium transition hover:bg-accent"
-          title="Playback speed"
+          onClick={() => adjustSpeed(-SPEED_STEP)}
+          disabled={speed <= MIN_SPEED}
+          className="w-8 h-8 rounded-full bg-card hover:bg-border disabled:opacity-30 flex items-center justify-center text-sm font-bold transition text-foreground"
+          title="Slower"
         >
-          {speed}x
+          −
         </button>
         <button
+          onClick={() => setSpeed(DEFAULT_SPEED)}
+          className="text-xs font-mono font-medium text-foreground px-3 min-w-[58px] text-center hover:text-accent transition"
+          title="Click to reset to 0.9x"
+        >
+          {speed.toFixed(2)}x
+        </button>
+        <button
+          onClick={() => adjustSpeed(SPEED_STEP)}
+          disabled={speed >= MAX_SPEED}
+          className="w-8 h-8 rounded-full bg-card hover:bg-border disabled:opacity-30 flex items-center justify-center text-sm font-bold transition text-foreground"
+          title="Faster"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Toggle buttons */}
+      <div className="flex justify-center gap-2">
+        <button
           onClick={() => setLoop(!loop)}
-          className={`text-xs px-3 py-1.5 rounded-full transition font-medium ${
-            loop ? 'bg-primary-dark text-white' : 'bg-border text-muted'
+          className={`text-xs px-3 py-1.5 rounded-full transition font-medium border ${
+            loop
+              ? 'bg-foreground text-background border-foreground'
+              : 'bg-card text-muted border-border'
           }`}
         >
-          Loop {loop ? 'ON' : 'OFF'}
+          Loop {loop ? 'on' : 'off'}
         </button>
         <button
           onClick={() => setShowVN(!showVN)}
-          className={`text-xs px-3 py-1.5 rounded-full transition font-medium ${
-            showVN ? 'bg-accent text-foreground' : 'bg-border text-muted'
+          className={`text-xs px-3 py-1.5 rounded-full transition font-medium border ${
+            showVN
+              ? 'bg-foreground text-background border-foreground'
+              : 'bg-card text-muted border-border'
           }`}
         >
-          VN {showVN ? 'ON' : 'OFF'}
+          VN {showVN ? 'on' : 'off'}
         </button>
       </div>
 
@@ -235,7 +264,7 @@ export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerP
             onClick={() => skipTo(i)}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 ${
               i === currentCueIndex
-                ? 'bg-accent text-foreground font-medium'
+                ? 'bg-row-alt text-foreground font-medium'
                 : 'hover:bg-row-alt text-foreground'
             }`}
           >

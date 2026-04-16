@@ -50,7 +50,7 @@ function PlayerPageInner() {
   if (playlists.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <p className="text-4xl mb-4 text-primary-dark">~</p>
+        <p className="text-4xl mb-4 text-foreground">~</p>
         <h2 className="text-lg font-semibold mb-2 text-foreground">
           No playlists with audio yet
         </h2>
@@ -59,7 +59,7 @@ function PlayerPageInner() {
         </p>
         <a
           href="/playlists"
-          className="px-4 py-2 bg-primary-dark text-white rounded-lg text-sm hover:bg-primary transition"
+          className="px-4 py-2 bg-foreground text-background rounded-lg text-sm hover:opacity-80 transition"
         >
           Go to Playlists
         </a>
@@ -77,7 +77,7 @@ function PlayerPageInner() {
               onClick={() => setSelected(p)}
               className={`text-sm px-3 py-1.5 rounded-lg transition font-medium ${
                 selected?.id === p.id
-                  ? 'bg-primary-dark text-white'
+                  ? 'bg-foreground text-background'
                   : 'bg-row-alt text-muted hover:bg-border'
               }`}
             >

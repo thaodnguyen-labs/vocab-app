@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import VocabGrid from '@/components/VocabGrid'
 
 interface Vocab {
@@ -54,7 +55,7 @@ export default function VocabPage() {
     if (result.error) {
       setMessage(`Error: ${result.error}`)
     } else {
-      setMessage(`Saved ${result.data.length} vocab items!`)
+      setMessage(`Saved ${result.data.length} vocab items`)
       loadVocab(search)
     }
   }
@@ -83,7 +84,15 @@ export default function VocabPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1 text-foreground">Vocab Manager</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-2xl font-bold text-foreground">Vocab Manager</h1>
+        <Link
+          href="/import"
+          className="text-xs text-muted hover:text-foreground underline"
+        >
+          Import file
+        </Link>
+      </div>
       <p className="text-sm text-muted mb-6">Add new vocabulary or manage existing entries</p>
 
       <div className="mb-8">
@@ -92,7 +101,7 @@ export default function VocabPage() {
         {message && (
           <p
             className={`mt-2 text-sm ${
-              message.startsWith('Error') ? 'text-danger' : 'text-primary-dark font-medium'
+              message.startsWith('Error') ? 'text-danger' : 'text-foreground font-medium'
             }`}
           >
             {message}
@@ -108,7 +117,7 @@ export default function VocabPage() {
             placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="text-sm px-3 py-1.5 border border-border rounded-lg w-48 focus:outline-none focus:border-primary-dark bg-near-white"
+            className="text-sm px-3 py-1.5 border border-border rounded-lg w-48 focus:outline-none focus:border-foreground bg-near-white text-foreground"
           />
         </div>
 
@@ -122,7 +131,7 @@ export default function VocabPage() {
             ))}
           </div>
         ) : vocabList.length === 0 ? (
-          <p className="text-sm text-muted">No vocab yet. Add some above!</p>
+          <p className="text-sm text-muted">No vocab yet. Add some above.</p>
         ) : (
           <div className="space-y-2">
             {vocabList.map((v) => (
@@ -138,10 +147,10 @@ export default function VocabPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => toggleStatus(v)}
-                      className={`text-xs px-2 py-0.5 rounded font-medium ${
+                      className={`text-xs px-2 py-0.5 rounded font-medium border ${
                         v.status === 'YES'
-                          ? 'bg-primary text-foreground'
-                          : 'bg-row-alt text-muted'
+                          ? 'bg-foreground text-background border-foreground'
+                          : 'bg-card text-muted border-border'
                       }`}
                     >
                       {v.status === 'YES' ? 'Learned' : 'New'}

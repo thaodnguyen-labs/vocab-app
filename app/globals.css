@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  /* Sage green palette */
-  --background: #F5FFF5;
-  --foreground: #2D2D2D;
-  --primary: #A8C5A0;        /* sage green - primary headings */
-  --primary-dark: #90B890;   /* muted green-grey - borders, deeper accents */
-  --accent: #B8DDB0;         /* mint green - section accents */
-  --success: #90B890;
-  --danger: #B85C5C;         /* muted desaturated red - for delete only */
+  /* Minimal warm neutral palette */
+  --background: #FAF9F5;      /* warm off-white */
+  --foreground: #1F1F1F;      /* charcoal */
   --card: #FFFFFF;
-  --border: #C8E6C0;         /* light pastel green */
-  --row-alt: #E8F5E0;        /* very pale green - alternating rows */
-  --muted: #6A8A62;          /* darker green-grey for secondary text */
-  --near-white: #F5FFF5;
+  --primary: #1F1F1F;         /* near-black for primary actions */
+  --primary-dark: #000000;
+  --accent: #C77B50;          /* muted terracotta - used sparingly */
+  --success: #5E8D5C;         /* subtle green for success states only */
+  --danger: #B85450;          /* muted red */
+  --border: #E8E4DC;          /* warm light grey */
+  --row-alt: #F5F2EA;         /* very light warm tint */
+  --muted: #737373;           /* medium grey for secondary text */
+  --near-white: #FDFCF8;
 }
 
 @theme inline {
@@ -28,6 +28,7 @@
   --color-border: var(--border);
   --color-row-alt: var(--row-alt);
   --color-muted: var(--muted);
+  --color-near-white: var(--near-white);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -53,20 +54,20 @@ body {
 }
 
 .vocab-grid td:focus {
-  outline: 2px solid var(--primary-dark);
+  outline: 2px solid var(--foreground);
   outline-offset: -2px;
-  background: #EEFBEC;
+  background: #FFFFFF;
 }
 
 .vocab-grid th {
   border: 1px solid var(--border);
   padding: 6px 8px;
-  background: var(--border); /* C8E6C0 table header fill */
+  background: var(--row-alt);
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--foreground);
+  color: var(--muted);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -77,32 +78,31 @@ input[type="range"].audio-progress {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 6px;
+  height: 4px;
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 2px;
   outline: none;
 }
 
 input[type="range"].audio-progress::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
-  background: var(--primary-dark);
+  width: 14px;
+  height: 14px;
+  background: var(--foreground);
   border-radius: 50%;
   cursor: pointer;
 }
 
 input[type="range"].audio-progress::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: var(--primary-dark);
+  width: 14px;
+  height: 14px;
+  background: var(--foreground);
   border-radius: 50%;
   cursor: pointer;
   border: none;
 }
 
-/* Smooth transitions */
 * {
   -webkit-tap-highlight-color: transparent;
 }

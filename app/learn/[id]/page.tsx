@@ -57,7 +57,6 @@ export default function LearnPage({
     audio.currentTime = cue.startTime
     audio.play()
 
-    // Stop at next cue (approximate)
     const nextCue = playlist.cue_points[currentIdx + 1]
     if (nextCue) {
       const stopTime = nextCue.startTime
@@ -79,7 +78,6 @@ export default function LearnPage({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: current.vocab.id, used: newUsed }),
     })
-    // Update local state
     setPlaylist((prev) => {
       if (!prev) return prev
       return {
@@ -138,7 +136,7 @@ export default function LearnPage({
     return (
       <div className="text-center py-12">
         <p className="text-muted">Playlist not found or empty</p>
-        <Link href="/playlists" className="text-primary-dark underline text-sm mt-2 inline-block">
+        <Link href="/playlists" className="text-foreground underline text-sm mt-2 inline-block">
           Back to playlists
         </Link>
       </div>
@@ -147,13 +145,11 @@ export default function LearnPage({
 
   return (
     <div>
-      {/* Hidden audio element for single-sentence playback */}
       {playlist.audio_url && <audio ref={audioRef} src={playlist.audio_url} preload="auto" />}
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <Link href="/playlists" className="text-xs text-muted hover:text-primary-dark">
+          <Link href="/playlists" className="text-xs text-muted hover:text-foreground">
             &larr; All playlists
           </Link>
           <h1 className="text-xl font-bold mt-1 text-foreground">{playlist.name}</h1>
@@ -163,7 +159,6 @@ export default function LearnPage({
         </span>
       </div>
 
-      {/* Progress dots */}
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
         {items.map((item, i) => (
           <button
@@ -175,9 +170,9 @@ export default function LearnPage({
             }}
             className={`shrink-0 w-6 h-1.5 rounded-full transition ${
               i === currentIdx
-                ? 'bg-primary-dark'
+                ? 'bg-foreground'
                 : item.vocab.status === 'YES'
-                ? 'bg-primary'
+                ? 'bg-muted'
                 : 'bg-border'
             }`}
             title={`${i + 1}. ${item.vocab.en}`}
@@ -185,9 +180,7 @@ export default function LearnPage({
         ))}
       </div>
 
-      {/* Flashcard */}
       <div className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
-        {/* Vietnamese (always shown - prompt) */}
         <div className="mb-4">
           <p className="text-xs text-muted uppercase tracking-wide mb-2">Vietnamese</p>
           <p className="text-xl leading-relaxed text-foreground font-medium">
@@ -195,7 +188,6 @@ export default function LearnPage({
           </p>
         </div>
 
-        {/* English (revealed) */}
         {revealed ? (
           <div className="border-t border-border pt-4">
             <p className="text-xs text-muted uppercase tracking-wide mb-2">English</p>
@@ -209,7 +201,7 @@ export default function LearnPage({
               <div className="mt-3">
                 <button
                   onClick={() => setShowNote(!showNote)}
-                  className="text-xs text-primary-dark font-medium hover:underline"
+                  className="text-xs text-foreground font-medium hover:underline"
                 >
                   {showNote ? 'Hide note' : 'Show note'}
                 </button>
@@ -227,36 +219,35 @@ export default function LearnPage({
               setRevealed(true)
               if (playlist.audio_url) playCurrentAudio()
             }}
-            className="w-full border-2 border-dashed border-border rounded-xl py-8 text-muted hover:border-primary-dark hover:text-primary-dark transition font-medium"
+            className="w-full border-2 border-dashed border-border rounded-xl py-8 text-muted hover:border-foreground hover:text-foreground transition font-medium"
           >
             Tap to reveal English
           </button>
         )}
       </div>
 
-      {/* Actions when revealed */}
       {revealed && (
         <div className="flex gap-2 mb-4">
           {playlist.audio_url && (
             <button
               onClick={playCurrentAudio}
-              className="flex-1 py-2.5 bg-accent text-foreground rounded-lg font-medium hover:bg-primary transition"
+              className="flex-1 py-2.5 bg-row-alt border border-border text-foreground rounded-lg font-medium hover:bg-border transition"
             >
               Play audio
             </button>
           )}
           <button
             onClick={markPracticed}
-            className="flex-1 py-2.5 bg-primary text-foreground rounded-lg font-medium hover:bg-accent transition"
+            className="flex-1 py-2.5 bg-row-alt border border-border text-foreground rounded-lg font-medium hover:bg-border transition"
           >
             Practiced ({current.vocab.used || 0})
           </button>
           <button
             onClick={toggleLearned}
-            className={`flex-1 py-2.5 rounded-lg font-medium transition ${
+            className={`flex-1 py-2.5 rounded-lg font-medium transition border ${
               current.vocab.status === 'YES'
-                ? 'bg-primary-dark text-white hover:bg-primary'
-                : 'bg-border text-foreground hover:bg-primary'
+                ? 'bg-foreground text-background border-foreground hover:opacity-80'
+                : 'bg-card text-foreground border-border hover:border-foreground'
             }`}
           >
             {current.vocab.status === 'YES' ? 'Learned' : 'Mark learned'}
@@ -264,7 +255,6 @@ export default function LearnPage({
         </div>
       )}
 
-      {/* Navigation */}
       <div className="flex gap-2">
         <button
           onClick={prev}
@@ -274,13 +264,12 @@ export default function LearnPage({
         </button>
         <button
           onClick={next}
-          className="flex-1 py-3 bg-primary-dark text-white rounded-lg font-medium hover:bg-primary transition"
+          className="flex-1 py-3 bg-foreground text-background rounded-lg font-medium hover:opacity-80 transition"
         >
           Next &gt;
         </button>
       </div>
 
-      {/* Full sentence list */}
       <div className="mt-8">
         <h3 className="text-sm font-semibold mb-2 text-foreground">All sentences</h3>
         <div className="space-y-1 max-h-64 overflow-y-auto">
@@ -294,14 +283,14 @@ export default function LearnPage({
               }}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
                 i === currentIdx
-                  ? 'bg-accent text-foreground font-medium'
+                  ? 'bg-row-alt text-foreground font-medium border border-border'
                   : 'bg-card border border-border hover:bg-row-alt'
               }`}
             >
               <span className="text-xs text-muted mr-2">{i + 1}.</span>
               <span className="text-foreground">{item.vocab.vn}</span>
               {item.vocab.status === 'YES' && (
-                <span className="ml-2 text-xs text-primary-dark">+</span>
+                <span className="ml-2 text-xs text-foreground font-bold">·</span>
               )}
             </button>
           ))}

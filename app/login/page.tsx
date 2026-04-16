@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-card rounded-2xl shadow-lg p-8 max-w-sm w-full border border-border">
+      <div className="bg-card rounded-2xl shadow-sm p-8 max-w-sm w-full border border-border">
         <h1 className="text-2xl font-bold text-center mb-1 text-foreground">Vocab Practice</h1>
         <p className="text-sm text-muted text-center mb-6">Enter password to continue</p>
 
@@ -39,7 +39,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
-            className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:border-primary-dark text-foreground bg-near-white"
+            className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:border-foreground text-foreground bg-near-white"
           />
 
           {error && <p className="text-sm text-danger text-center">{error}</p>}
@@ -47,7 +47,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full py-3 bg-primary-dark text-white rounded-lg font-medium hover:bg-primary disabled:opacity-50 transition"
+            className="w-full py-3 bg-foreground text-background rounded-lg font-medium hover:opacity-80 disabled:opacity-50 transition"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>

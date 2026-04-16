@@ -1,12 +1,11 @@
 import { EdgeTTS } from 'edge-tts-universal'
 import pLimit from 'p-limit'
 
-// Male voice - Andrew is Microsoft's high-quality male neural voice
-const VOICE = 'en-US-AndrewMultilingualNeural'
+// Clear, deep male voice. Brian is Microsoft's high-quality male multilingual neural voice.
+const VOICE = 'en-US-BrianMultilingualNeural'
 const SILENCE_DURATION_MS = 1200
 
 function generateSilence(durationMs: number): Buffer {
-  // Generate a silent MP3 frame (~26ms per frame at 24kHz mono)
   const frameSize = 104
   const framesNeeded = Math.ceil(durationMs / 26)
   const silentFrame = Buffer.alloc(frameSize, 0)

@@ -4,17 +4,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const links = [
-  { href: '/', label: 'Home', icon: '~' },
-  { href: '/vocab', label: 'Vocab', icon: '+' },
-  { href: '/import', label: 'Import', icon: '^' },
-  { href: '/playlists', label: 'Playlists', icon: '#' },
-  { href: '/player', label: 'Player', icon: '>' },
+  { href: '/', label: 'Home' },
+  { href: '/vocab', label: 'Vocab' },
+  { href: '/playlists', label: 'Lists' },
+  { href: '/player', label: 'Player' },
+  { href: '/sync', label: 'Sync' },
 ]
 
 export default function Nav() {
   const pathname = usePathname()
 
-  // Hide nav on login page
   if (pathname === '/login') return null
 
   return (
@@ -23,17 +22,17 @@ export default function Nav() {
         {links.map((link) => {
           const active =
             pathname === link.href ||
-            (link.href === '/playlists' && pathname.startsWith('/learn'))
+            (link.href === '/playlists' && pathname.startsWith('/learn')) ||
+            (link.href === '/sync' && pathname === '/import')
           return (
             <Link
               key={link.href}
               href={link.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${
-                active ? 'text-primary-dark font-semibold' : 'text-muted'
+              className={`flex items-center justify-center px-3 py-2 text-sm transition-colors ${
+                active ? 'text-foreground font-semibold' : 'text-muted'
               }`}
             >
-              <span className="text-lg leading-none">{link.icon}</span>
-              <span>{link.label}</span>
+              {link.label}
             </Link>
           )
         })}

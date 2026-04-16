@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server'
 export const maxDuration = 30
 
 interface SheetRow {
+  year?: number | null
   week?: number | null
   no?: number | null
   en: string
@@ -11,6 +12,7 @@ interface SheetRow {
   note?: string
   status?: string
   used?: number
+  level?: number
 }
 
 async function fetchScriptJson(url: string): Promise<{ data?: SheetRow[]; error?: string }> {
@@ -25,8 +27,6 @@ async function fetchScriptJson(url: string): Promise<{ data?: SheetRow[]; error?
     const text = await res.text()
 
     if (!contentType.includes('json')) {
-      // HTML response usually means Apps Script access is not "Anyone"
-      // or the deployment URL is wrong
       return {
         error: `Google Apps Script returned HTML instead of JSON (status ${res.status}). This usually means: (1) The deployment is not set to "Anyone" access, or (2) The URL is wrong, or (3) The script has an error. Redeploy with "Who has access: Anyone" and try again.`,
       }
@@ -65,7 +65,9 @@ export async function POST() {
   const rows = json.data || []
   if (rows.length === 0) return Response.json({ added: 0, updated: 0, total: 0 })
 
-  const { data: existing } = await supabase.from('vocab').select('id, en, vn, status, used')
+  const { data: existing } = await supabase
+    .from('vocab')
+    .select('id, en, vn, status, used, year, week, level')
   const existingMap = new Map((existing || []).map((v) => [v.en.trim().toLowerCase(), v]))
 
   let added = 0
@@ -78,7 +80,13 @@ export async function POST() {
     const match = existingMap.get(key)
 
     if (match) {
-      if (match.status !== row.status || match.used !== row.used) {
+      const needsUpdate =
+        match.status !== row.status ||
+        match.used !== row.used ||
+        match.year !== row.year ||
+        match.week !== row.week ||
+        match.level !== row.level
+      if (needsUpdate) {
         await supabase
           .from('vocab')
           .update({
@@ -87,6 +95,9 @@ export async function POST() {
             vn: row.vn,
             source: row.source,
             note: row.note,
+            year: row.year || null,
+            week: row.week || null,
+            level: row.level || 1,
           })
           .eq('id', match.id)
         updated++
@@ -101,6 +112,7 @@ export async function POST() {
       .from('vocab')
       .insert(
         toAdd.map((r) => ({
+          year: r.year || null,
           week: r.week || null,
           en: r.en.trim(),
           vn: r.vn || '',
@@ -108,6 +120,7 @@ export async function POST() {
           note: r.note || '',
           status: r.status || 'NO',
           used: r.used || 0,
+          level: r.level || 1,
         }))
       )
       .select()

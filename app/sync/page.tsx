@@ -2,19 +2,27 @@
 
 import { useState, useEffect } from 'react'
 
-const APPS_SCRIPT_CODE = `function doGet(e) {
+// Column layout in ListWeb sheet:
+// A=Year, B=Week, C=No, D=EN, E=VN, F=Source, G=Note, H=Status, I=Used, J=Level
+const APPS_SCRIPT_CODE = `const SHEET_NAME = 'ListWeb';
+const EN_COL = 4; // D
+
+function doGet() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ListWeb');
-    if (!sheet) return err('Sheet "ListWeb" not found');
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!sheet) return err('Sheet "' + SHEET_NAME + '" not found');
     const data = sheet.getDataRange().getValues();
-    const rows = data.slice(1).filter(r => r[2] || r[3]).map(r => ({
-      week: r[0] || null,
-      en: String(r[2] || '').trim(),
-      vn: String(r[3] || '').trim(),
-      source: String(r[4] || '').trim(),
-      note: String(r[5] || '').trim(),
+    const rows = data.slice(1).filter(r => r[3]).map(r => ({
+      year: Number(r[0]) || null,
+      week: Number(r[1]) || null,
+      no: r[2] || null,
+      en: String(r[3] || '').trim(),
+      vn: String(r[4] || '').trim(),
+      source: String(r[5] || '').trim(),
+      note: String(r[6] || '').trim(),
       status: String(r[7] || 'NO').trim(),
       used: Number(r[8]) || 0,
+      level: Number(r[9]) || 1,
     }));
     return ok({data: rows});
   } catch (error) {
@@ -25,19 +33,40 @@ const APPS_SCRIPT_CODE = `function doGet(e) {
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ListWeb');
-    if (!sheet) return err('Sheet "ListWeb" not found');
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!sheet) return err('Sheet "' + SHEET_NAME + '" not found');
 
-    const toRow = r => [r.week || '', r.no || '', r.en, r.vn, r.source || '', r.note || '', '', r.status || 'NO', r.used || 0];
+    const toRow = r => [r.year || '', r.week || '', r.no || '', r.en, r.vn, r.source || '', r.note || '', r.status || 'NO', r.used || 0, r.level || 1];
+
+    if (body.action === 'counts') {
+      // Only update Status (col H=8), Used (col I=9), Level (col J=10) by matching EN
+      const data = sheet.getDataRange().getValues();
+      const enIndex = {};
+      for (let i = 1; i < data.length; i++) {
+        const en = String(data[i][EN_COL - 1] || '').trim().toLowerCase();
+        if (en) enIndex[en] = i + 1; // row number (1-indexed)
+      }
+      let updated = 0;
+      for (const r of body.rows) {
+        const key = String(r.en || '').trim().toLowerCase();
+        const rowNum = enIndex[key];
+        if (!rowNum) continue;
+        sheet.getRange(rowNum, 8).setValue(r.status || 'NO');
+        sheet.getRange(rowNum, 9).setValue(r.used || 0);
+        sheet.getRange(rowNum, 10).setValue(r.level || 1);
+        updated++;
+      }
+      return ok({updated: updated});
+    }
 
     if (body.action === 'replace') {
       const last = sheet.getLastRow();
-      if (last > 1) sheet.getRange(2, 1, last - 1, 9).clearContent();
+      if (last > 1) sheet.getRange(2, 1, last - 1, 10).clearContent();
     }
     const rows = body.rows.map(toRow);
     if (rows.length > 0) {
       const startRow = sheet.getLastRow() + 1;
-      sheet.getRange(startRow, 1, rows.length, 9).setValues(rows);
+      sheet.getRange(startRow, 1, rows.length, 10).setValues(rows);
     }
     return ok({written: rows.length});
   } catch (error) {
@@ -96,9 +125,8 @@ export default function SyncPage() {
       body: JSON.stringify({ key: 'sheets_script_url', value: scriptUrl.trim() }),
     })
     const result = await safeJson(res)
-    if (result.error) {
-      setMsg({ type: 'error', text: result.error })
-    } else {
+    if (result.error) setMsg({ type: 'error', text: result.error })
+    else {
       setSavedUrl(scriptUrl.trim())
       setMsg({ type: 'success', text: 'URL saved' })
     }
@@ -108,45 +136,32 @@ export default function SyncPage() {
   const testConnection = async () => {
     setTesting(true)
     setMsg({ type: 'info', text: 'Testing connection...' })
-    try {
-      // Call via server proxy to avoid browser CORS
-      const res = await fetch('/api/sync/pull', { method: 'POST' })
-      const result = await safeJson(res)
-      if (result.error) {
-        setMsg({ type: 'error', text: result.error })
-      } else {
-        setMsg({
-          type: 'success',
-          text: `Connected. Sheet has ${result.total || 0} rows. (Pull was also executed: added ${result.added}, updated ${result.updated})`,
-        })
-      }
-    } catch (e) {
-      setMsg({ type: 'error', text: String(e) })
-    }
+    const res = await fetch('/api/sync/pull', { method: 'POST' })
+    const result = await safeJson(res)
+    if (result.error) setMsg({ type: 'error', text: result.error })
+    else
+      setMsg({
+        type: 'success',
+        text: `Connected. Sheet has ${result.total || 0} rows. Pulled: added ${result.added}, updated ${result.updated}`,
+      })
     setTesting(false)
   }
 
   const pull = async () => {
     setPulling(true)
     setMsg({ type: 'info', text: 'Pulling from Google Sheets...' })
-    try {
-      const res = await fetch('/api/sync/pull', { method: 'POST' })
-      const result = await safeJson(res)
-      if (result.error) {
-        setMsg({ type: 'error', text: result.error })
-      } else {
-        setMsg({
-          type: 'success',
-          text: `Pulled ${result.total} rows. Added ${result.added}, updated ${result.updated}.`,
-        })
-      }
-    } catch (e) {
-      setMsg({ type: 'error', text: String(e) })
-    }
+    const res = await fetch('/api/sync/pull', { method: 'POST' })
+    const result = await safeJson(res)
+    if (result.error) setMsg({ type: 'error', text: result.error })
+    else
+      setMsg({
+        type: 'success',
+        text: `Pulled ${result.total} rows. Added ${result.added}, updated ${result.updated}.`,
+      })
     setPulling(false)
   }
 
-  const push = async (action: 'append' | 'replace') => {
+  const push = async (action: 'append' | 'replace' | 'counts') => {
     if (action === 'replace') {
       if (
         !confirm(
@@ -156,21 +171,26 @@ export default function SyncPage() {
         return
     }
     setPushing(true)
-    setMsg({ type: 'info', text: `Pushing to Google Sheets (${action})...` })
-    try {
-      const res = await fetch('/api/sync/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
-      })
-      const result = await safeJson(res)
-      if (result.error) {
-        setMsg({ type: 'error', text: result.error })
-      } else {
-        setMsg({ type: 'success', text: `Pushed ${result.count} rows (${action}).` })
+    const labels = {
+      append: 'Appending new rows...',
+      replace: 'Replacing all rows...',
+      counts: 'Updating status and used counts in sheet...',
+    }
+    setMsg({ type: 'info', text: labels[action] })
+    const res = await fetch('/api/sync/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    const result = await safeJson(res)
+    if (result.error) setMsg({ type: 'error', text: result.error })
+    else {
+      const doneLabels = {
+        append: `Appended ${result.written || result.count} rows`,
+        replace: `Wrote ${result.written || result.count} rows (replaced all)`,
+        counts: `Updated counts for ${result.updated} matching rows in sheet`,
       }
-    } catch (e) {
-      setMsg({ type: 'error', text: String(e) })
+      setMsg({ type: 'success', text: doneLabels[action] })
     }
     setPushing(false)
   }
@@ -186,7 +206,6 @@ export default function SyncPage() {
       <h1 className="text-2xl font-bold mb-1 text-foreground">Google Sheets Sync</h1>
       <p className="text-sm text-muted mb-6">Bidirectional sync with your Google Sheet</p>
 
-      {/* Script URL config */}
       <div className="bg-card border border-border rounded-xl p-4 mb-4">
         <label className="text-sm font-medium block mb-2 text-foreground">
           Apps Script Web App URL
@@ -199,7 +218,8 @@ export default function SyncPage() {
           className="w-full text-xs px-3 py-2 border border-border rounded-lg bg-near-white focus:outline-none focus:border-foreground text-foreground font-mono"
         />
         <p className="text-xs text-muted mt-1">
-          Must end in <span className="font-mono">/exec</span> (not <span className="font-mono">/edit</span>)
+          Must end in <span className="font-mono">/exec</span> (not{' '}
+          <span className="font-mono">/edit</span>)
         </p>
         <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
           <button
@@ -229,55 +249,59 @@ export default function SyncPage() {
         </div>
       </div>
 
-      {/* Setup instructions */}
       {showSetup && (
         <div className="bg-card border border-border rounded-xl p-4 mb-4 text-sm text-foreground">
-          <h3 className="font-semibold mb-3">One-time setup (~2 minutes)</h3>
+          <h3 className="font-semibold mb-3">One-time setup</h3>
           <ol className="list-decimal list-inside space-y-2 text-sm text-muted">
             <li>
-              Open your Google Sheet (must have a tab named{' '}
-              <span className="font-mono text-foreground">ListWeb</span>)
+              Your Google Sheet must have a tab named{' '}
+              <span className="font-mono text-foreground">ListWeb</span> with columns in row 1:{' '}
+              <span className="font-mono text-foreground">
+                Year, Week, No, EN, VN, Source, Note, Status, Used, Level
+              </span>{' '}
+              (A through J)
             </li>
             <li>
               Menu: <span className="font-mono text-foreground">Extensions → Apps Script</span>
             </li>
-            <li>Delete the default code. Paste the script below (click Copy)</li>
+            <li>Delete default code. Paste the script below (click Copy)</li>
             <li>
-              Save (disk icon or <span className="font-mono">Ctrl/Cmd+S</span>)
+              Save (<span className="font-mono">Ctrl/Cmd+S</span>)
             </li>
             <li>
-              Click <span className="font-mono text-foreground">Deploy → New deployment</span>
+              <span className="font-mono text-foreground">Deploy → New deployment</span> (or
+              Manage deployments → edit → New version if updating)
             </li>
             <li>
-              Click the gear icon → Select{' '}
-              <span className="font-mono text-foreground">Web app</span>
+              Gear icon → <span className="font-mono text-foreground">Web app</span>
             </li>
             <li>
               Execute as: <span className="font-mono text-foreground">Me</span>
             </li>
             <li>
-              Who has access: <span className="font-mono text-foreground font-bold bg-row-alt px-1">Anyone</span>{' '}
-              (this is critical — without it you will get HTML errors)
+              Who has access:{' '}
+              <span className="font-mono text-foreground font-bold bg-row-alt px-1">Anyone</span>{' '}
+              (critical — without it you get HTML errors)
             </li>
-            <li>Click Deploy → Authorize → Allow permissions</li>
+            <li>Deploy → Authorize → Allow permissions</li>
             <li>
-              Copy the <span className="font-mono text-foreground">Web app URL</span> (must end
-              in <span className="font-mono">/exec</span>)
+              Copy the Web app URL (must end in <span className="font-mono">/exec</span>)
             </li>
-            <li>Paste it above, click Save URL, then click Test</li>
+            <li>Paste above, Save URL, then click Test</li>
           </ol>
 
           <div className="mt-4 p-3 bg-row-alt border border-border rounded-lg">
             <p className="text-xs text-foreground">
-              <strong>If you re-edit the script later:</strong> Go to Deploy → Manage deployments
-              → pencil icon → Version: New version → Deploy. The URL stays the same.
+              <strong>Updated the script?</strong> You must redeploy a NEW VERSION: Deploy →
+              Manage deployments → pencil icon → Version: New version → Deploy. The URL stays the
+              same.
             </p>
           </div>
 
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-muted uppercase tracking-wide">
-                Apps Script Code
+                Apps Script Code (v2 — supports year, level, counts sync)
               </span>
               <button
                 onClick={copyScript}
@@ -286,26 +310,20 @@ export default function SyncPage() {
                 {copied ? 'Copied!' : 'Copy'}
               </button>
             </div>
-            <pre className="bg-row-alt border border-border rounded-lg p-3 text-xs overflow-x-auto font-mono text-foreground max-h-60 overflow-y-auto">
+            <pre className="bg-row-alt border border-border rounded-lg p-3 text-xs overflow-x-auto font-mono text-foreground max-h-72 overflow-y-auto">
               {APPS_SCRIPT_CODE}
             </pre>
           </div>
-
-          <p className="text-xs text-muted mt-4">
-            <strong className="text-foreground">Expected columns:</strong> A=Week, B=No, C=EN,
-            D=VN, E=Source, F=Note, H=Status, I=Used. This matches your existing sheet.
-          </p>
         </div>
       )}
 
-      {/* Sync buttons */}
       {savedUrl && (
         <div className="space-y-3">
           <div className="bg-card border border-border rounded-xl p-4">
             <h3 className="font-semibold mb-1 text-foreground">Pull from Sheets → App</h3>
             <p className="text-xs text-muted mb-3">
-              Reads your Google Sheet. New rows are added. Existing rows (matched by English
-              text) have their status/used/notes updated.
+              Reads ListWeb. New rows are added. Existing rows (matched by English text) are
+              updated.
             </p>
             <button
               onClick={pull}
@@ -319,30 +337,50 @@ export default function SyncPage() {
           <div className="bg-card border border-border rounded-xl p-4">
             <h3 className="font-semibold mb-1 text-foreground">Push from App → Sheets</h3>
             <p className="text-xs text-muted mb-3">
-              Writes app data to your Google Sheet&apos;s{' '}
-              <span className="font-mono">ListWeb</span> tab.
+              Three modes for sending app data back to your ListWeb tab.
             </p>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => push('append')}
-                disabled={pushing}
-                className="px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 transition"
-              >
-                {pushing ? 'Pushing...' : 'Append to Sheet'}
-              </button>
-              <button
-                onClick={() => push('replace')}
-                disabled={pushing}
-                className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 transition"
-              >
-                Replace All Rows
-              </button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => push('counts')}
+                  disabled={pushing}
+                  className="px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 transition min-w-[160px]"
+                >
+                  {pushing ? 'Syncing...' : 'Push Used Counts'}
+                </button>
+                <span className="text-xs text-muted">
+                  Safe. Updates only Status / Used / Level on matching rows.
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => push('append')}
+                  disabled={pushing}
+                  className="px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-row-alt disabled:opacity-50 transition min-w-[160px]"
+                >
+                  {pushing ? 'Pushing...' : 'Append All'}
+                </button>
+                <span className="text-xs text-muted">
+                  Adds all app rows at end of sheet (may create duplicates).
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => push('replace')}
+                  disabled={pushing}
+                  className="px-4 py-2 bg-card border border-danger text-danger rounded-lg text-sm font-medium hover:bg-row-alt disabled:opacity-50 transition min-w-[160px]"
+                >
+                  Replace All Rows
+                </button>
+                <span className="text-xs text-muted">
+                  Dangerous. Clears the sheet first, then writes all app rows.
+                </span>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Message display */}
       {msg && (
         <div
           className={`mt-4 p-3 rounded-lg text-sm border ${

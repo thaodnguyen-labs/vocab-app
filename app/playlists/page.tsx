@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 
 interface Vocab {
@@ -9,6 +9,9 @@ interface Vocab {
   vn: string
   status: string
   used: number
+  year: number | null
+  week: number | null
+  level: number | null
 }
 
 interface Playlist {
@@ -32,7 +35,14 @@ export default function PlaylistsPage() {
   const [generating, setGenerating] = useState<number | null>(null)
   const [message, setMessage] = useState('')
   const [showCreate, setShowCreate] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'new' | 'learned'>('all')
+
+  // Filters for vocab picker
+  const [filterStatus, setFilterStatus] = useState<'' | 'YES' | 'NO'>('NO') // default: new
+  const [filterYear, setFilterYear] = useState('')
+  const [filterWeek, setFilterWeek] = useState('')
+  const [filterLevel, setFilterLevel] = useState('')
+  const [filterMinUsed, setFilterMinUsed] = useState('')
+  const [filterMaxUsed, setFilterMaxUsed] = useState('')
 
   useEffect(() => {
     loadPlaylists()
@@ -47,16 +57,22 @@ export default function PlaylistsPage() {
   }
 
   const loadVocab = async () => {
-    const res = await fetch('/api/vocab?minimal=1&limit=500')
+    const res = await fetch('/api/vocab?minimal=1&limit=1000')
     const { data } = await res.json()
     setVocabList(data || [])
   }
 
-  const filteredVocab = vocabList.filter((v) => {
-    if (filter === 'new') return v.status !== 'YES'
-    if (filter === 'learned') return v.status === 'YES'
-    return true
-  })
+  const filteredVocab = useMemo(() => {
+    return vocabList.filter((v) => {
+      if (filterStatus && v.status !== filterStatus) return false
+      if (filterYear && v.year !== parseInt(filterYear)) return false
+      if (filterWeek && v.week !== parseInt(filterWeek)) return false
+      if (filterLevel && v.level !== parseInt(filterLevel)) return false
+      if (filterMinUsed && (v.used || 0) < parseInt(filterMinUsed)) return false
+      if (filterMaxUsed && (v.used || 0) > parseInt(filterMaxUsed)) return false
+      return true
+    })
+  }, [vocabList, filterStatus, filterYear, filterWeek, filterLevel, filterMinUsed, filterMaxUsed])
 
   const toggleVocab = (id: number) => {
     setSelectedIds((prev) => {
@@ -68,14 +84,15 @@ export default function PlaylistsPage() {
   }
 
   const selectRandom = (count: number) => {
-    const pool = filter === 'all' ? vocabList : filteredVocab
-    const shuffled = [...pool].sort(() => Math.random() - 0.5)
+    const shuffled = [...filteredVocab].sort(() => Math.random() - 0.5)
     const picked = shuffled.slice(0, Math.min(count, shuffled.length))
     setSelectedIds(new Set(picked.map((v) => v.id)))
     if (!playlistName) {
       const now = new Date()
       const dateStr = `${now.getMonth() + 1}/${now.getDate()}`
-      setPlaylistName(`${count} sentences · ${dateStr}`)
+      const suffix =
+        filterStatus === 'NO' ? 'new' : filterStatus === 'YES' ? 'review' : 'mixed'
+      setPlaylistName(`${count} ${suffix} · ${dateStr}`)
     }
   }
 
@@ -108,7 +125,12 @@ export default function PlaylistsPage() {
 
   const generateAudio = async (playlist: Playlist, isRegenerate = false) => {
     if (isRegenerate) {
-      if (!confirm(`Regenerate audio for "${playlist.name}"? This will overwrite the current audio file.`)) return
+      if (
+        !confirm(
+          `Regenerate audio for "${playlist.name}"? This will overwrite the current audio file.`
+        )
+      )
+        return
     }
     setGenerating(playlist.id)
     setMessage('')
@@ -185,27 +207,69 @@ export default function PlaylistsPage() {
             className="w-full text-sm px-3 py-2 border border-border rounded-lg mb-3 bg-near-white focus:outline-none focus:border-foreground text-foreground"
           />
 
-          <div className="flex gap-2 mb-3">
-            {(['all', 'new', 'learned'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`text-xs px-3 py-1 rounded-full transition font-medium border ${
-                  filter === f
-                    ? 'bg-foreground text-background border-foreground'
-                    : 'bg-card text-muted border-border hover:border-foreground'
-                }`}
+          {/* Filters */}
+          <div className="bg-row-alt border border-border rounded-lg p-3 mb-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-muted uppercase tracking-wide font-medium">Filter:</span>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as '' | 'YES' | 'NO')}
+                className="px-2 py-1 border border-border rounded bg-near-white text-foreground"
               >
-                {f === 'all'
-                  ? `All (${vocabList.length})`
-                  : f === 'new'
-                  ? `New (${vocabList.filter((v) => v.status !== 'YES').length})`
-                  : `Learned (${vocabList.filter((v) => v.status === 'YES').length})`}
-              </button>
-            ))}
+                <option value="">All status</option>
+                <option value="NO">New (H=NO)</option>
+                <option value="YES">Learned (H=YES)</option>
+              </select>
+
+              <input
+                type="number"
+                placeholder="Year"
+                value={filterYear}
+                onChange={(e) => setFilterYear(e.target.value)}
+                className="px-2 py-1 border border-border rounded bg-near-white w-20 text-foreground"
+              />
+
+              <input
+                type="number"
+                placeholder="Week"
+                value={filterWeek}
+                onChange={(e) => setFilterWeek(e.target.value)}
+                className="px-2 py-1 border border-border rounded bg-near-white w-20 text-foreground"
+              />
+
+              <select
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value)}
+                className="px-2 py-1 border border-border rounded bg-near-white text-foreground"
+              >
+                <option value="">All levels</option>
+                <option value="1">L1</option>
+                <option value="2">L2</option>
+              </select>
+
+              <input
+                type="number"
+                placeholder="Min used"
+                value={filterMinUsed}
+                onChange={(e) => setFilterMinUsed(e.target.value)}
+                className="px-2 py-1 border border-border rounded bg-near-white w-20 text-foreground"
+              />
+
+              <input
+                type="number"
+                placeholder="Max used"
+                value={filterMaxUsed}
+                onChange={(e) => setFilterMaxUsed(e.target.value)}
+                className="px-2 py-1 border border-border rounded bg-near-white w-20 text-foreground"
+              />
+            </div>
+            <p className="text-xs text-muted">
+              Matching pool: {filteredVocab.length} / {vocabList.length}
+            </p>
           </div>
 
-          <p className="text-xs text-muted mb-1">Quick pick random from {filter}:</p>
+          <p className="text-xs text-muted mb-1">Pick random from filtered pool:</p>
           <div className="flex gap-2 flex-wrap mb-3">
             {PRESET_SIZES.map((n) => (
               <button

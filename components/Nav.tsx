@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const links = [
-  { href: '/', label: 'Dashboard', icon: '~' },
+  { href: '/', label: 'Home', icon: '~' },
   { href: '/vocab', label: 'Vocab', icon: '+' },
   { href: '/import', label: 'Import', icon: '^' },
   { href: '/playlists', label: 'Playlists', icon: '#' },
@@ -14,17 +14,22 @@ const links = [
 export default function Nav() {
   const pathname = usePathname()
 
+  // Hide nav on login page
+  if (pathname === '/login') return null
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-area-pb">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
       <div className="flex justify-around items-center h-14 max-w-lg mx-auto">
         {links.map((link) => {
-          const active = pathname === link.href
+          const active =
+            pathname === link.href ||
+            (link.href === '/playlists' && pathname.startsWith('/learn'))
           return (
             <Link
               key={link.href}
               href={link.href}
               className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${
-                active ? 'text-primary font-semibold' : 'text-muted'
+                active ? 'text-primary-dark font-semibold' : 'text-muted'
               }`}
             >
               <span className="text-lg leading-none">{link.icon}</span>

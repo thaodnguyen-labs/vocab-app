@@ -1,28 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-light: #3b82f6;
-  --accent: #f59e0b;
-  --success: #10b981;
-  --danger: #ef4444;
-  --card: #ffffff;
-  --border: #e2e8f0;
-  --muted: #64748b;
+  /* Sage green palette */
+  --background: #F5FFF5;
+  --foreground: #2D2D2D;
+  --primary: #A8C5A0;        /* sage green - primary headings */
+  --primary-dark: #90B890;   /* muted green-grey - borders, deeper accents */
+  --accent: #B8DDB0;         /* mint green - section accents */
+  --success: #90B890;
+  --danger: #B85C5C;         /* muted desaturated red - for delete only */
+  --card: #FFFFFF;
+  --border: #C8E6C0;         /* light pastel green */
+  --row-alt: #E8F5E0;        /* very pale green - alternating rows */
+  --muted: #6A8A62;          /* darker green-grey for secondary text */
+  --near-white: #F5FFF5;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
-  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
   --color-accent: var(--accent);
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-card: var(--card);
   --color-border: var(--border);
+  --color-row-alt: var(--row-alt);
   --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -41,22 +45,28 @@ body {
   min-width: 120px;
   vertical-align: top;
   outline: none;
+  color: var(--foreground);
+}
+
+.vocab-grid tbody tr:nth-child(even) td {
+  background: var(--row-alt);
 }
 
 .vocab-grid td:focus {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--primary-dark);
   outline-offset: -2px;
-  background: #eff6ff;
+  background: #EEFBEC;
 }
 
 .vocab-grid th {
   border: 1px solid var(--border);
   padding: 6px 8px;
-  background: #f1f5f9;
+  background: var(--border); /* C8E6C0 table header fill */
   font-weight: 600;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: var(--foreground);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -78,7 +88,21 @@ input[type="range"].audio-progress::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
-  background: var(--primary);
+  background: var(--primary-dark);
   border-radius: 50%;
   cursor: pointer;
+}
+
+input[type="range"].audio-progress::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--primary-dark);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Smooth transitions */
+* {
+  -webkit-tap-highlight-color: transparent;
 }

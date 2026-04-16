@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import AudioPlayer, { type CuePoint } from '@/components/AudioPlayer'
-import { supabase } from '@/lib/supabase-client'
 
 interface Playlist {
   id: number
@@ -11,25 +11,33 @@ interface Playlist {
   cue_points: CuePoint[] | null
 }
 
-export default function PlayerPage() {
+function PlayerPageInner() {
+  const searchParams = useSearchParams()
+  const preferId = searchParams.get('id')
+
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [selected, setSelected] = useState<Playlist | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
-        .from('playlists')
-        .select('id, name, audio_url, cue_points')
-        .not('audio_url', 'is', null)
-        .order('created_at', { ascending: false })
+      const res = await fetch('/api/playlists')
+      const { data } = await res.json()
+      // Filter: only those with audio
+      const withAudio = (data || []).filter((p: Playlist) => p.audio_url)
+      setPlaylists(withAudio)
 
-      setPlaylists(data || [])
-      if (data && data.length > 0) setSelected(data[0])
+      if (withAudio.length > 0) {
+        // If URL has ?id=, prefer that one
+        const found = preferId
+          ? withAudio.find((p: Playlist) => p.id === parseInt(preferId))
+          : null
+        setSelected(found || withAudio[0])
+      }
       setLoading(false)
     }
     load()
-  }, [])
+  }, [preferId])
 
   if (loading) {
     return (
@@ -42,14 +50,16 @@ export default function PlayerPage() {
   if (playlists.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <p className="text-4xl mb-4">~</p>
-        <h2 className="text-lg font-semibold mb-2">No playlists with audio yet</h2>
+        <p className="text-4xl mb-4 text-primary-dark">~</p>
+        <h2 className="text-lg font-semibold mb-2 text-foreground">
+          No playlists with audio yet
+        </h2>
         <p className="text-sm text-muted mb-4">
           Create a playlist and generate audio first.
         </p>
         <a
           href="/playlists"
-          className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary-light transition"
+          className="px-4 py-2 bg-primary-dark text-white rounded-lg text-sm hover:bg-primary transition"
         >
           Go to Playlists
         </a>
@@ -59,17 +69,16 @@ export default function PlayerPage() {
 
   return (
     <div>
-      {/* Playlist selector */}
       {playlists.length > 1 && (
         <div className="flex flex-wrap gap-2 mb-6">
           {playlists.map((p) => (
             <button
               key={p.id}
               onClick={() => setSelected(p)}
-              className={`text-sm px-3 py-1.5 rounded-lg transition ${
+              className={`text-sm px-3 py-1.5 rounded-lg transition font-medium ${
                 selected?.id === p.id
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 hover:bg-gray-200'
+                  ? 'bg-primary-dark text-white'
+                  : 'bg-row-alt text-muted hover:bg-border'
               }`}
             >
               {p.name}
@@ -78,7 +87,6 @@ export default function PlayerPage() {
         </div>
       )}
 
-      {/* Audio player */}
       {selected && selected.audio_url && selected.cue_points && (
         <AudioPlayer
           key={selected.id}
@@ -88,5 +96,13 @@ export default function PlayerPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function PlayerPage() {
+  return (
+    <Suspense fallback={<p className="text-muted">Loading...</p>}>
+      <PlayerPageInner />
+    </Suspense>
   )
 }

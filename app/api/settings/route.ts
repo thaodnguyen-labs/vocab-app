@@ -1,24 +1,32 @@
 import { createServerClient } from '@/lib/supabase-server'
 import { NextRequest } from 'next/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = createServerClient()
-  const { data, error } = await supabase.from('settings').select('*')
+  const key = request.nextUrl.searchParams.get('key')
 
+  if (key) {
+    const { data } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', key)
+      .single()
+    return Response.json({ value: data?.value ?? null })
+  }
+
+  const { data, error } = await supabase.from('settings').select('*')
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
-  // Convert array of {key, value} to object
   const settings: Record<string, string> = {}
   for (const row of data || []) {
     settings[row.key] = row.value
   }
-
   return Response.json({ settings })
 }
 
 export async function PUT(request: NextRequest) {
   const supabase = createServerClient()
-  const body = await request.json() // { key, value }
+  const body = await request.json()
 
   const { error } = await supabase
     .from('settings')

@@ -9,10 +9,17 @@ export interface CuePoint {
   vn: string
 }
 
+interface PlaylistItem {
+  en: string
+  vn: string
+}
+
 interface AudioPlayerProps {
   audioUrl: string
   cuePoints: CuePoint[]
   title: string
+  playlistId?: number
+  items?: PlaylistItem[]
 }
 
 const MIN_SPEED = 0.7
@@ -20,7 +27,13 @@ const MAX_SPEED = 1.25
 const SPEED_STEP = 0.05
 const DEFAULT_SPEED = 0.9
 
-export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerProps) {
+export default function AudioPlayer({
+  audioUrl,
+  cuePoints,
+  title,
+  playlistId,
+  items,
+}: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -29,6 +42,43 @@ export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerP
   const [loop, setLoop] = useState(true)
   const [showVN, setShowVN] = useState(true)
   const [speed, setSpeed] = useState(DEFAULT_SPEED)
+  const [confirming, setConfirming] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+  const [confirmMsg, setConfirmMsg] = useState('')
+
+  const confirmKey = playlistId ? `confirmed-${playlistId}` : null
+
+  useEffect(() => {
+    if (!confirmKey) return
+    if (typeof window !== 'undefined' && localStorage.getItem(confirmKey)) {
+      setConfirmed(true)
+    }
+  }, [confirmKey])
+
+  const confirmLearned = async () => {
+    if (!items || items.length === 0 || !playlistId) return
+    setConfirming(true)
+    setConfirmMsg('')
+    try {
+      const res = await fetch('/api/sheet/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enList: items.map((i) => i.en) }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        setConfirmMsg(`Error: ${json.error}`)
+      } else {
+        setConfirmed(true)
+        if (confirmKey) localStorage.setItem(confirmKey, new Date().toISOString())
+        setConfirmMsg(`Updated ${json.updated} rows in your Sheet`)
+      }
+    } catch (e) {
+      setConfirmMsg(`Error: ${String(e)}`)
+    } finally {
+      setConfirming(false)
+    }
+  }
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.playbackRate = speed
@@ -256,6 +306,35 @@ export default function AudioPlayer({ audioUrl, cuePoints, title }: AudioPlayerP
           VN {showVN ? 'on' : 'off'}
         </button>
       </div>
+
+      {playlistId && items && items.length > 0 && (
+        <div className="mt-5 border-t border-border pt-5">
+          <button
+            onClick={confirmLearned}
+            disabled={confirming || confirmed}
+            className={`w-full py-3 rounded-lg font-semibold transition border ${
+              confirmed
+                ? 'bg-row-alt text-muted border-border cursor-not-allowed'
+                : 'bg-foreground text-background border-foreground hover:opacity-80 disabled:opacity-60'
+            }`}
+          >
+            {confirming
+              ? 'Pushing to Sheet...'
+              : confirmed
+              ? 'Confirmed — used +1 in Sheet'
+              : `Confirm learned (+1 used for ${items.length})`}
+          </button>
+          {confirmMsg && (
+            <p
+              className={`text-xs mt-2 text-center ${
+                confirmMsg.startsWith('Error') ? 'text-danger' : 'text-muted'
+              }`}
+            >
+              {confirmMsg}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 max-h-60 overflow-y-auto border-t border-border pt-4">
         {cuePoints.map((cue, i) => (

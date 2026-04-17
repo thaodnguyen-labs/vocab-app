@@ -4,11 +4,17 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import AudioPlayer, { type CuePoint } from '@/components/AudioPlayer'
 
+interface PlaylistItem {
+  en: string
+  vn: string
+}
+
 interface Playlist {
   id: number
   name: string
   audio_url: string | null
   cue_points: CuePoint[] | null
+  items: PlaylistItem[] | null
 }
 
 function PlayerPageInner() {
@@ -23,14 +29,12 @@ function PlayerPageInner() {
     const load = async () => {
       const res = await fetch('/api/playlists')
       const { data } = await res.json()
-      // Filter: only those with audio
-      const withAudio = (data || []).filter((p: Playlist) => p.audio_url)
+      const withAudio: Playlist[] = (data || []).filter((p: Playlist) => p.audio_url)
       setPlaylists(withAudio)
 
       if (withAudio.length > 0) {
-        // If URL has ?id=, prefer that one
         const found = preferId
-          ? withAudio.find((p: Playlist) => p.id === parseInt(preferId))
+          ? withAudio.find((p) => p.id === parseInt(preferId))
           : null
         setSelected(found || withAudio[0])
       }
@@ -55,7 +59,7 @@ function PlayerPageInner() {
           No playlists with audio yet
         </h2>
         <p className="text-sm text-muted mb-4">
-          Create a playlist and generate audio first.
+          Pick a size on the Playlists page first.
         </p>
         <a
           href="/playlists"
@@ -90,8 +94,10 @@ function PlayerPageInner() {
       {selected && selected.audio_url && selected.cue_points && (
         <AudioPlayer
           key={selected.id}
+          playlistId={selected.id}
           audioUrl={selected.audio_url}
           cuePoints={selected.cue_points}
+          items={selected.items || []}
           title={selected.name}
         />
       )}

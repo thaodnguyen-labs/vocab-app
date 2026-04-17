@@ -37,18 +37,6 @@ export default function PlaylistsPage() {
   const [message, setMessage] = useState('')
   const [sheetError, setSheetError] = useState('')
 
-  // Settings: script URL. Shown inline only if missing.
-  const [scriptUrl, setScriptUrl] = useState<string | null>(null)
-  const [scriptUrlDraft, setScriptUrlDraft] = useState('')
-  const [savingUrl, setSavingUrl] = useState(false)
-
-  const loadSettings = async () => {
-    const res = await fetch('/api/settings?key=sheets_script_url')
-    const { value } = await res.json()
-    setScriptUrl(value || null)
-    setScriptUrlDraft(value || '')
-  }
-
   const loadPlaylists = async () => {
     const res = await fetch('/api/playlists')
     const { data } = await res.json()
@@ -68,23 +56,10 @@ export default function PlaylistsPage() {
     setRows(json.data || [])
   }
 
-  const saveScriptUrl = async () => {
-    setSavingUrl(true)
-    await fetch('/api/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'sheets_script_url', value: scriptUrlDraft }),
-    })
-    setScriptUrl(scriptUrlDraft)
-    setSavingUrl(false)
-    loadSheet()
-  }
-
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     void loadPlaylists()
     void loadSheet()
-    void loadSettings()
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
@@ -184,36 +159,12 @@ export default function PlaylistsPage() {
         </p>
       </div>
 
-      {scriptUrl === null && !loading && (
-        <div className="bg-card border border-border rounded-xl p-4 mb-6">
-          <p className="text-sm font-semibold mb-2 text-foreground">
-            Set your Google Apps Script URL
-          </p>
-          <p className="text-xs text-muted mb-3">
-            Deploy your Sheet&apos;s Apps Script as a Web App (&quot;Anyone&quot; access) and paste the URL here.
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={scriptUrlDraft}
-              onChange={(e) => setScriptUrlDraft(e.target.value)}
-              placeholder="https://script.google.com/macros/s/.../exec"
-              className="flex-1 text-sm px-3 py-2 border border-border rounded-lg bg-near-white focus:outline-none focus:border-foreground text-foreground"
-            />
-            <button
-              onClick={saveScriptUrl}
-              disabled={savingUrl || !scriptUrlDraft.trim()}
-              className="px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-80 transition"
-            >
-              {savingUrl ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
-      )}
-
       {sheetError && (
         <div className="bg-card border border-danger rounded-xl p-3 mb-4 text-sm text-danger">
-          {sheetError}
+          {sheetError}{' '}
+          <Link href="/settings" className="underline">
+            Set source URL
+          </Link>
         </div>
       )}
 

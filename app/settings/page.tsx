@@ -190,10 +190,14 @@ function doGet() {
     var nums = String(v).match(/\d+/g);
     return nums && nums.length > 0 ? Number(nums[nums.length - 1]) : 0;
   }
+  const rawP1 = sheet.getRange("P1").getValue();
+  const rawO1 = sheet.getRange("O1").getValue();
+  const rawN1 = sheet.getRange("N1").getValue();
   const summary = {
-    used3: parseCount(sheet.getRange("P1").getValue()),
-    used5: parseCount(sheet.getRange("O1").getValue()),
-    used7: parseCount(sheet.getRange("N1").getValue()),
+    used3: parseCount(rawP1),
+    used5: parseCount(rawO1),
+    used7: parseCount(rawN1),
+    raw: { P1: String(rawP1), O1: String(rawO1), N1: String(rawN1) },
   };
   return ContentService
     .createTextOutput(JSON.stringify({ data: rows, summary: summary }))

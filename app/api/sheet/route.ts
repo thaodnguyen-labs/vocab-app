@@ -13,6 +13,12 @@ export interface SheetRow {
   used?: number
 }
 
+export interface SheetSummary {
+  used3?: number
+  used5?: number
+  used7?: number
+}
+
 async function getScriptUrl(): Promise<{ url?: string; error?: string }> {
   const supabase = createServerClient()
   const { data } = await supabase
@@ -58,10 +64,14 @@ export async function GET() {
   const { url, error } = await getScriptUrl()
   if (error) return Response.json({ error }, { status: 400 })
 
-  const json = await fetchSheetJson<SheetRow[]>(url!)
+  const json = (await fetchSheetJson<SheetRow[]>(url!)) as {
+    data?: SheetRow[]
+    summary?: SheetSummary
+    error?: string
+  }
   if (json.error) return Response.json({ error: json.error }, { status: 500 })
 
-  return Response.json({ data: json.data || [] })
+  return Response.json({ data: json.data || [], summary: json.summary || {} })
 }
 
 export { getScriptUrl }

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/purge-playlists",
+      "schedule": "0 19 * * *"
+    }
+  ]
+}

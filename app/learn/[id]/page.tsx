@@ -201,7 +201,9 @@ export default function LearnPage({
               <StickyNote size={12} />
               Note
             </span>
-            <p className="text-sm leading-relaxed text-muted italic mt-1">{current.note}</p>
+            <p className="text-sm leading-relaxed text-muted italic mt-1 whitespace-pre-wrap">
+              {current.note}
+            </p>
           </div>
         )}
 

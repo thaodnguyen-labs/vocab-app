@@ -8,13 +8,14 @@ export function middleware(request: NextRequest) {
   // Public routes that don't require auth
   const isLoginPage = pathname === '/login'
   const isAuthApi = pathname === '/api/auth'
+  const isCronApi = pathname.startsWith('/api/cron/')
   const isPublicAsset =
     pathname.startsWith('/_next') ||
     pathname.startsWith('/icons') ||
     pathname === '/manifest.json' ||
     pathname === '/favicon.ico'
 
-  if (isLoginPage || isAuthApi || isPublicAsset) {
+  if (isLoginPage || isAuthApi || isCronApi || isPublicAsset) {
     return NextResponse.next()
   }
 

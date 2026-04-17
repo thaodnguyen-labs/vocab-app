@@ -2,12 +2,20 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Home, ListMusic, Play, Settings, LucideIcon } from 'lucide-react'
 
-const links = [
-  { href: '/', label: 'Home' },
-  { href: '/playlists', label: 'Lists' },
-  { href: '/player', label: 'Player' },
-  { href: '/settings', label: 'Source' },
+interface NavLink {
+  href: string
+  label: string
+  Icon: LucideIcon
+  color: string
+}
+
+const links: NavLink[] = [
+  { href: '/', label: 'Home', Icon: Home, color: 'var(--brand-purple)' },
+  { href: '/playlists', label: 'Lists', Icon: ListMusic, color: 'var(--brand-blue)' },
+  { href: '/player', label: 'Player', Icon: Play, color: 'var(--brand-amber-dark)' },
+  { href: '/settings', label: 'Source', Icon: Settings, color: 'var(--muted)' },
 ]
 
 export default function Nav() {
@@ -16,21 +24,21 @@ export default function Nav() {
   if (pathname === '/login') return null
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-      <div className="flex justify-around items-center h-14 max-w-lg mx-auto">
-        {links.map((link) => {
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t-2 border-border z-50">
+      <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+        {links.map(({ href, label, Icon, color }) => {
           const active =
-            pathname === link.href ||
-            (link.href === '/playlists' && pathname.startsWith('/learn'))
+            pathname === href ||
+            (href === '/playlists' && pathname.startsWith('/learn'))
           return (
             <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center justify-center px-3 py-2 text-sm transition-colors ${
-                active ? 'text-foreground font-semibold' : 'text-muted'
-              }`}
+              key={href}
+              href={href}
+              className="flex flex-col items-center justify-center px-3 py-2 text-[11px] font-semibold transition-colors"
+              style={{ color: active ? color : 'var(--muted)' }}
             >
-              {link.label}
+              <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+              <span className="mt-0.5">{label}</span>
             </Link>
           )
         })}

@@ -2,7 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { ListMusic } from 'lucide-react'
 import AudioPlayer, { type CuePoint } from '@/components/AudioPlayer'
+import Mascot from '@/components/Mascot'
 
 interface PlaylistItem {
   en: string
@@ -54,19 +57,20 @@ function PlayerPageInner() {
   if (playlists.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <p className="text-4xl mb-4 text-foreground">~</p>
-        <h2 className="text-lg font-semibold mb-2 text-foreground">
+        <Mascot state="waving" size="lg" />
+        <h2 className="text-lg font-bold mt-4 mb-2 text-foreground">
           No playlists with audio yet
         </h2>
         <p className="text-sm text-muted mb-4">
           Pick a size on the Playlists page first.
         </p>
-        <a
+        <Link
           href="/playlists"
-          className="px-4 py-2 bg-foreground text-background rounded-lg text-sm hover:opacity-80 transition"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-brand-blue text-white border-b-4 border-brand-blue-dark rounded-xl text-sm font-bold hover:brightness-105 active:border-b-2 active:translate-y-[2px] transition"
         >
+          <ListMusic size={16} />
           Go to Playlists
-        </a>
+        </Link>
       </div>
     )
   }
@@ -79,10 +83,10 @@ function PlayerPageInner() {
             <button
               key={p.id}
               onClick={() => setSelected(p)}
-              className={`text-sm px-3 py-1.5 rounded-lg transition font-medium ${
+              className={`text-sm px-3 py-1.5 rounded-lg transition font-bold ${
                 selected?.id === p.id
-                  ? 'bg-foreground text-background'
-                  : 'bg-row-alt text-muted hover:bg-border'
+                  ? 'bg-brand-amber text-foreground border-b-4 border-brand-amber-dark'
+                  : 'bg-card text-muted border-2 border-border hover:border-foreground'
               }`}
             >
               {p.name}

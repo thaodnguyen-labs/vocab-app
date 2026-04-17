@@ -3,10 +3,20 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import {
+  Play,
+  BookOpen,
+  RotateCw,
+  Trash2,
+  Shuffle,
+  Sparkles,
+} from 'lucide-react'
+import Mascot from '@/components/Mascot'
 
 interface SheetRow {
   en: string
   vn: string
+  note?: string
   status?: string
   used?: number
 }
@@ -14,6 +24,7 @@ interface SheetRow {
 interface PlaylistItem {
   en: string
   vn: string
+  note?: string
 }
 
 interface Playlist {
@@ -78,7 +89,11 @@ export default function PlaylistsPage() {
 
     // Shuffle and take N unique
     const shuffled = [...newRows].sort(() => Math.random() - 0.5)
-    const picked = shuffled.slice(0, n).map((r) => ({ en: r.en.trim(), vn: r.vn || '' }))
+    const picked = shuffled.slice(0, n).map((r) => ({
+      en: r.en.trim(),
+      vn: r.vn || '',
+      note: r.note || '',
+    }))
 
     const now = new Date()
     const day = now.toLocaleDateString('en-US', { weekday: 'short' }) // e.g. Wed
@@ -178,11 +193,17 @@ export default function PlaylistsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1 text-foreground">Playlists</h1>
-        <p className="text-sm text-muted">
-          Pick random vocab (status=NO) from your Sheet
-        </p>
+      <div className="mb-6 flex items-center gap-3">
+        <Mascot state="idle" size="sm" />
+        <div>
+          <h1 className="text-2xl font-bold mb-1 text-foreground flex items-center gap-2">
+            <Sparkles className="text-brand-blue" size={22} />
+            Playlists
+          </h1>
+          <p className="text-sm text-muted">
+            Pick random vocab (status=NO) from your Sheet
+          </p>
+        </div>
       </div>
 
       {sheetError && (
@@ -204,10 +225,13 @@ export default function PlaylistsPage() {
         </p>
       )}
 
-      <div className="bg-card border border-border rounded-xl p-4 mb-6">
+      <div className="bg-tint-blue border-2 border-brand-blue/30 rounded-2xl p-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-foreground">Pick random</p>
-          <p className="text-xs text-muted">
+          <p className="text-sm font-bold text-brand-blue-dark flex items-center gap-1.5">
+            <Shuffle size={16} />
+            Pick random
+          </p>
+          <p className="text-xs text-muted font-medium">
             {newRows.length} available
             {rows.length > 0 && ` · ${rows.length} total`}
           </p>
@@ -221,7 +245,7 @@ export default function PlaylistsPage() {
                 key={n}
                 onClick={() => pickAndCreate(n)}
                 disabled={disabled}
-                className="text-base px-4 py-2 bg-row-alt text-foreground border border-border rounded-lg hover:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition font-semibold min-w-[52px]"
+                className="text-base px-4 py-2 bg-white text-brand-blue-dark border-b-4 border-brand-blue/40 rounded-lg hover:brightness-105 active:border-b-2 active:translate-y-[2px] disabled:opacity-30 disabled:cursor-not-allowed transition font-bold min-w-[52px]"
               >
                 {busy ? '...' : n}
               </button>
@@ -229,9 +253,14 @@ export default function PlaylistsPage() {
           })}
         </div>
         {(picking !== null || generating !== null) && (
-          <p className="text-xs text-muted mt-2">
-            {picking !== null ? 'Creating playlist...' : 'Generating audio (can take ~30s)...'}
-          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <Mascot state="waving" size="sm" />
+            <p className="text-xs text-muted font-medium">
+              {picking !== null
+                ? 'Creating playlist...'
+                : 'Generating audio (can take ~30s)...'}
+            </p>
+          </div>
         )}
       </div>
 
@@ -247,8 +276,8 @@ export default function PlaylistsPage() {
           ))}
         </div>
       ) : playlists.length === 0 ? (
-        <div className="text-center py-8 text-muted text-sm">
-          No playlists yet. Pick a size above.
+        <div className="flex flex-col items-center py-8">
+          <Mascot state="waving" size="lg" message="Pick a size to start!" />
         </div>
       ) : (
         <div className="space-y-3">
@@ -279,9 +308,10 @@ export default function PlaylistsPage() {
                 )}
                 <button
                   onClick={() => deletePlaylist(p.id, p.name)}
-                  className="text-xs px-2 py-1 text-danger hover:bg-row-alt rounded transition shrink-0"
+                  aria-label="Delete playlist"
+                  className="p-1.5 text-danger hover:bg-tint-rose rounded-lg transition shrink-0"
                 >
-                  Delete
+                  <Trash2 size={16} />
                 </button>
               </div>
               <p className="text-xs text-muted mb-3">
@@ -289,20 +319,30 @@ export default function PlaylistsPage() {
                 {p.audio_url && ' · audio ready'}
               </p>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 {p.audio_url ? (
                   <>
                     <Link
                       href={`/player?id=${p.id}`}
-                      className="text-xs px-3 py-1.5 bg-foreground text-background rounded-lg hover:opacity-80 font-medium transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-brand-green text-white border-b-4 border-brand-green-dark rounded-lg hover:brightness-105 active:border-b-2 active:translate-y-[2px] transition"
                     >
+                      <Play size={14} fill="currentColor" />
                       Play
+                    </Link>
+                    <Link
+                      href={`/learn/${p.id}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-brand-rose text-white border-b-4 border-brand-rose-dark rounded-lg hover:brightness-105 active:border-b-2 active:translate-y-[2px] transition"
+                    >
+                      <BookOpen size={14} />
+                      Learn
                     </Link>
                     <button
                       onClick={() => regenerateAudio(p)}
                       disabled={generating === p.id}
-                      className="text-xs px-3 py-1.5 text-muted hover:text-foreground rounded-lg disabled:opacity-50 font-medium transition"
+                      aria-label="Regenerate audio"
+                      className="inline-flex items-center gap-1.5 text-xs px-2 py-1.5 text-muted hover:text-foreground rounded-lg disabled:opacity-50 font-medium transition"
                     >
+                      <RotateCw size={14} className={generating === p.id ? 'animate-spin' : ''} />
                       {generating === p.id ? 'Regenerating...' : 'Regenerate'}
                     </button>
                   </>
@@ -310,8 +350,9 @@ export default function PlaylistsPage() {
                   <button
                     onClick={() => regenerateAudio(p)}
                     disabled={generating === p.id}
-                    className="text-xs px-3 py-1.5 bg-row-alt text-foreground border border-border rounded-lg hover:bg-border disabled:opacity-50 font-medium transition"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-brand-amber text-foreground border-b-4 border-brand-amber-dark rounded-lg hover:brightness-105 active:border-b-2 active:translate-y-[2px] disabled:opacity-50 transition"
                   >
+                    <Sparkles size={14} />
                     {generating === p.id ? 'Generating...' : 'Generate Audio'}
                   </button>
                 )}

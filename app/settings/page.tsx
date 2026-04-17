@@ -184,8 +184,14 @@ function doGet() {
       used:   r[8],
     };
   });
+  // Summary cells from row 1 (used-count buckets)
+  const summary = {
+    used3: sheet.getRange("N1").getValue(),
+    used5: sheet.getRange("O1").getValue(),
+    used7: sheet.getRange("P1").getValue(),
+  };
   return ContentService
-    .createTextOutput(JSON.stringify({ data: rows }))
+    .createTextOutput(JSON.stringify({ data: rows, summary: summary }))
     .setMimeType(ContentService.MimeType.JSON);
 }
 

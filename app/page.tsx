@@ -7,9 +7,9 @@ import {
   CheckCircle2,
   Sparkles,
   Flame,
-  TrendingUp,
   ListMusic,
   Play,
+  Target,
 } from 'lucide-react'
 import Mascot from '@/components/Mascot'
 
@@ -17,6 +17,12 @@ interface SheetRow {
   en: string
   status?: string
   used?: number
+}
+
+interface SheetSummary {
+  used3?: number
+  used5?: number
+  used7?: number
 }
 
 const TIPS = [
@@ -28,6 +34,7 @@ const TIPS = [
 
 export default function Dashboard() {
   const [rows, setRows] = useState<SheetRow[]>([])
+  const [summary, setSummary] = useState<SheetSummary>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [playlistCount, setPlaylistCount] = useState(0)
@@ -46,7 +53,10 @@ export default function Dashboard() {
     ])
       .then(([sheetRes, playlistsRes]) => {
         if (sheetRes.error) setError(sheetRes.error)
-        else setRows(sheetRes.data || [])
+        else {
+          setRows(sheetRes.data || [])
+          setSummary(sheetRes.summary || {})
+        }
         setPlaylistCount((playlistsRes.data || []).length)
         setLoading(false)
       })
@@ -65,7 +75,6 @@ export default function Dashboard() {
     (r) => String(r.status || '').trim().toUpperCase() === 'NO'
   ).length
   const totalPractice = valid.reduce((sum, r) => sum + (Number(r.used) || 0), 0)
-  const progress = total > 0 ? Math.round((learned / total) * 100) : 0
 
   return (
     <div>
@@ -145,24 +154,28 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-card border-2 border-border rounded-2xl p-4 mb-6">
-            <div className="flex justify-between items-center text-sm mb-2">
-              <span className="font-bold text-foreground flex items-center gap-1.5">
-                <TrendingUp size={16} className="text-brand-green-dark" />
-                Mastery
-              </span>
-              <span className="text-brand-green-dark font-bold">{progress}%</span>
-            </div>
-            <div className="h-3 bg-row-alt rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${progress}%`,
-                  background:
-                    'linear-gradient(90deg, var(--brand-green) 0%, var(--brand-green-dark) 100%)',
-                }}
-              />
-            </div>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <StatCard
+              Icon={Target}
+              value={Number(summary.used3) || 0}
+              label="Used 3+"
+              tint="var(--tint-rose)"
+              accent="var(--brand-rose-dark)"
+            />
+            <StatCard
+              Icon={Target}
+              value={Number(summary.used5) || 0}
+              label="Used 5+"
+              tint="var(--tint-purple)"
+              accent="var(--brand-purple-dark)"
+            />
+            <StatCard
+              Icon={Target}
+              value={Number(summary.used7) || 0}
+              label="Used 7+"
+              tint="var(--tint-green)"
+              accent="var(--brand-green-dark)"
+            />
           </div>
         </>
       )}

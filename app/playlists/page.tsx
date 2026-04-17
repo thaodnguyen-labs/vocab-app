@@ -96,9 +96,9 @@ export default function PlaylistsPage() {
     }))
 
     const now = new Date()
-    const day = now.toLocaleDateString('en-US', { weekday: 'short' }) // e.g. Wed
-    const month = now.toLocaleDateString('en-US', { month: 'long' }) // e.g. April
-    const name = `${n} - ${day} ${month}`
+    const dd = String(now.getDate()).padStart(2, '0')
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const name = `${dd}/${mm}`
 
     const createRes = await fetch('/api/playlists', {
       method: 'POST',

@@ -17,3 +17,26 @@ export async function GET(
   if (error) return Response.json({ error: error.message }, { status: 500 })
   return Response.json({ data })
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const supabase = createServerClient()
+  const { name } = await request.json()
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return Response.json({ error: 'name is required' }, { status: 400 })
+  }
+
+  const { data, error } = await supabase
+    .from('playlists')
+    .update({ name: name.trim() })
+    .eq('id', parseInt(id))
+    .select('id, name')
+    .single()
+
+  if (error) return Response.json({ error: error.message }, { status: 500 })
+  return Response.json({ data })
+}

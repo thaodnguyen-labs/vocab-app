@@ -1,8 +1,7 @@
 import { EdgeTTS } from 'edge-tts-universal'
 import pLimit from 'p-limit'
 
-// Clear, deep male voice. Brian is Microsoft's high-quality male multilingual neural voice.
-const VOICE = 'en-US-BrianMultilingualNeural'
+const VOICE = 'en-US-EricNeural'
 const SILENCE_DURATION_MS = 1200
 
 function generateSilence(durationMs: number): Buffer {

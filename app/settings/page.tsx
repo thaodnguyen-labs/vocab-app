@@ -125,30 +125,100 @@ export default function SettingsPage() {
         )}
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-4 text-sm text-muted">
-        <h3 className="font-semibold text-foreground mb-2">Apps Script requirements</h3>
-        <ul className="list-disc ml-5 space-y-1">
+      <div className="bg-card border border-border rounded-xl p-4 text-sm">
+        <h3 className="font-semibold text-foreground mb-2">Set up the Apps Script</h3>
+        <ol className="list-decimal ml-5 space-y-1 text-muted mb-4">
+          <li>Open your Google Sheet → Extensions → Apps Script.</li>
+          <li>Replace the editor contents with the script below.</li>
           <li>
-            The script must expose <code className="bg-row-alt px-1 rounded">doGet</code> returning{' '}
-            <code className="bg-row-alt px-1 rounded">
-              {'{data: [{en, vn, status, used, ...}]}'}
-            </code>{' '}
-            for the &quot;List&quot; sheet.
+            Click <em>Deploy → New deployment → Web app</em>. Set <em>Execute as: me</em> and{' '}
+            <em>Who has access: Anyone</em>. Copy the{' '}
+            <code className="bg-row-alt px-1 rounded">/exec</code> URL and paste it above.
           </li>
           <li>
-            The script must expose <code className="bg-row-alt px-1 rounded">doPost</code> accepting{' '}
-            <code className="bg-row-alt px-1 rounded">
-              {'{action: "confirm", enList: [...]}'}
-            </code>{' '}
-            and incrementing column I for each matched row.
+            After any script edit, redeploy as a <em>new version</em> — the old URL keeps the old
+            code.
           </li>
-          <li>
-            Deploy as a Web App: <em>Execute as: me</em>, <em>Who has access: Anyone</em>. Copy the{' '}
-            <code className="bg-row-alt px-1 rounded">/exec</code> URL.
-          </li>
-          <li>After editing the script, redeploy as a new version — old URLs keep the old code.</li>
-        </ul>
+        </ol>
+
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted uppercase tracking-wide font-medium">Apps Script</p>
+          <button
+            onClick={() => navigator.clipboard.writeText(APPS_SCRIPT_SOURCE)}
+            className="text-xs px-2 py-1 bg-row-alt border border-border rounded hover:bg-border text-foreground transition"
+          >
+            Copy
+          </button>
+        </div>
+        <pre className="bg-near-white border border-border rounded-lg p-3 text-xs text-foreground overflow-x-auto whitespace-pre leading-relaxed">
+          {APPS_SCRIPT_SOURCE}
+        </pre>
+
+        <p className="text-xs text-muted mt-3">
+          Columns expected in the <code className="bg-row-alt px-1 rounded">List</code> sheet:
+          Week (A), No (B), EN (C), VN (D), Source (E), Note (F), — (G), Status (H), Used (I).
+          Status=&quot;NO&quot; means a row is eligible to be picked. &quot;Confirm learned&quot; in
+          the player increments column I (Used) by 1 for each picked row.
+        </p>
       </div>
     </div>
   )
 }
+
+const APPS_SCRIPT_SOURCE = `// Vocab Practice — Apps Script bound to your Sheet
+// Sheet: "List" — columns: Week(A), No(B), EN(C), VN(D), Source(E), Note(F), (G), Status(H), Used(I)
+
+function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("List");
+  const values = sheet.getDataRange().getValues();
+  // skip header row
+  const rows = values.slice(1).map(function (r) {
+    return {
+      week:   r[0],
+      no:     r[1],
+      en:     r[2],
+      vn:     r[3],
+      source: r[4],
+      note:   r[5],
+      status: r[7],
+      used:   r[8],
+    };
+  });
+  return ContentService
+    .createTextOutput(JSON.stringify({ data: rows }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var body = {};
+  try { body = JSON.parse(e.postData.contents || "{}"); } catch (err) {}
+
+  if (body.action !== "confirm") {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: "unknown action" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const sheet  = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("List");
+  const enCol   = sheet.getRange("C:C").getValues();   // EN column
+  const usedCol = sheet.getRange("I:I").getValues();   // Used column
+  const targets = new Set(
+    (body.enList || []).map(function (s) { return String(s).trim().toLowerCase(); })
+  );
+
+  var updated = 0;
+  for (var i = 0; i < enCol.length; i++) {
+    var en = String(enCol[i][0] || "").trim().toLowerCase();
+    if (en && targets.has(en)) {
+      var cur = Number(usedCol[i][0]) || 0;
+      sheet.getRange(i + 1, 9).setValue(cur + 1); // column I = 9
+      updated++;
+    }
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ updated: updated }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+`
+

@@ -81,7 +81,9 @@ export default function PlaylistsPage() {
     const picked = shuffled.slice(0, n).map((r) => ({ en: r.en.trim(), vn: r.vn || '' }))
 
     const now = new Date()
-    const name = `${n} · ${now.getMonth() + 1}/${now.getDate()}`
+    const day = now.toLocaleDateString('en-US', { weekday: 'short' }) // e.g. Wed
+    const month = now.toLocaleDateString('en-US', { month: 'long' }) // e.g. April
+    const name = `${n} - ${day} ${month}`
 
     const createRes = await fetch('/api/playlists', {
       method: 'POST',
@@ -147,6 +149,30 @@ export default function PlaylistsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
+    loadPlaylists()
+  }
+
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingName, setEditingName] = useState('')
+
+  const startEdit = (p: Playlist) => {
+    setEditingId(p.id)
+    setEditingName(p.name)
+  }
+
+  const saveEdit = async () => {
+    if (editingId === null) return
+    const name = editingName.trim()
+    if (!name) {
+      setEditingId(null)
+      return
+    }
+    await fetch(`/api/playlists/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+    setEditingId(null)
     loadPlaylists()
   }
 
@@ -228,11 +254,32 @@ export default function PlaylistsPage() {
         <div className="space-y-3">
           {playlists.map((p) => (
             <div key={p.id} className="bg-card border border-border rounded-xl p-4">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-foreground">{p.name}</h3>
+              <div className="flex items-center justify-between mb-1 gap-2">
+                {editingId === p.id ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={saveEdit}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit()
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                    className="flex-1 font-semibold text-foreground bg-near-white border border-border rounded px-2 py-1 focus:outline-none focus:border-foreground"
+                  />
+                ) : (
+                  <button
+                    onClick={() => startEdit(p)}
+                    className="font-semibold text-foreground text-left flex-1 hover:underline"
+                    title="Click to rename"
+                  >
+                    {p.name}
+                  </button>
+                )}
                 <button
                   onClick={() => deletePlaylist(p.id, p.name)}
-                  className="text-xs px-2 py-1 text-danger hover:bg-row-alt rounded transition"
+                  className="text-xs px-2 py-1 text-danger hover:bg-row-alt rounded transition shrink-0"
                 >
                   Delete
                 </button>

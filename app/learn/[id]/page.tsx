@@ -3,14 +3,9 @@
 import { useState, useEffect, useRef, use } from 'react'
 import Link from 'next/link'
 
-interface Vocab {
-  id: number
+interface PlaylistItem {
   en: string
   vn: string
-  note: string | null
-  source: string | null
-  used: number
-  status: string
 }
 
 interface PlaylistData {
@@ -18,7 +13,7 @@ interface PlaylistData {
   name: string
   audio_url: string | null
   cue_points: { startTime: number }[] | null
-  playlist_items: { position: number; vocab: Vocab }[]
+  items: PlaylistItem[] | null
 }
 
 export default function LearnPage({
@@ -32,7 +27,6 @@ export default function LearnPage({
   const [loading, setLoading] = useState(true)
   const [currentIdx, setCurrentIdx] = useState(0)
   const [revealed, setRevealed] = useState(false)
-  const [showNote, setShowNote] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
@@ -44,7 +38,7 @@ export default function LearnPage({
       })
   }, [id])
 
-  const items = playlist?.playlist_items || []
+  const items = playlist?.items || []
   const current = items[currentIdx]
 
   const playCurrentAudio = () => {
@@ -70,57 +64,13 @@ export default function LearnPage({
     }
   }
 
-  const markPracticed = async () => {
-    if (!current) return
-    const newUsed = (current.vocab.used || 0) + 1
-    await fetch('/api/vocab', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: current.vocab.id, used: newUsed }),
-    })
-    setPlaylist((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        playlist_items: prev.playlist_items.map((item, i) =>
-          i === currentIdx
-            ? { ...item, vocab: { ...item.vocab, used: newUsed } }
-            : item
-        ),
-      }
-    })
-  }
-
-  const toggleLearned = async () => {
-    if (!current) return
-    const newStatus = current.vocab.status === 'YES' ? 'NO' : 'YES'
-    await fetch('/api/vocab', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: current.vocab.id, status: newStatus }),
-    })
-    setPlaylist((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        playlist_items: prev.playlist_items.map((item, i) =>
-          i === currentIdx
-            ? { ...item, vocab: { ...item.vocab, status: newStatus } }
-            : item
-        ),
-      }
-    })
-  }
-
   const next = () => {
     setRevealed(false)
-    setShowNote(false)
     setCurrentIdx((i) => (i + 1) % items.length)
   }
 
   const prev = () => {
     setRevealed(false)
-    setShowNote(false)
     setCurrentIdx((i) => (i - 1 + items.length) % items.length)
   }
 
@@ -160,22 +110,16 @@ export default function LearnPage({
       </div>
 
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
-        {items.map((item, i) => (
+        {items.map((_, i) => (
           <button
             key={i}
             onClick={() => {
               setCurrentIdx(i)
               setRevealed(false)
-              setShowNote(false)
             }}
             className={`shrink-0 w-6 h-1.5 rounded-full transition ${
-              i === currentIdx
-                ? 'bg-foreground'
-                : item.vocab.status === 'YES'
-                ? 'bg-muted'
-                : 'bg-border'
+              i === currentIdx ? 'bg-foreground' : 'bg-border'
             }`}
-            title={`${i + 1}. ${item.vocab.en}`}
           />
         ))}
       </div>
@@ -183,35 +127,13 @@ export default function LearnPage({
       <div className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
         <div className="mb-4">
           <p className="text-xs text-muted uppercase tracking-wide mb-2">Vietnamese</p>
-          <p className="text-xl leading-relaxed text-foreground font-medium">
-            {current.vocab.vn}
-          </p>
+          <p className="text-xl leading-relaxed text-foreground font-medium">{current.vn}</p>
         </div>
 
         {revealed ? (
           <div className="border-t border-border pt-4">
             <p className="text-xs text-muted uppercase tracking-wide mb-2">English</p>
-            <p className="text-xl leading-relaxed text-foreground mb-3">{current.vocab.en}</p>
-
-            {current.vocab.source && (
-              <p className="text-xs text-muted">Source: {current.vocab.source}</p>
-            )}
-
-            {current.vocab.note && (
-              <div className="mt-3">
-                <button
-                  onClick={() => setShowNote(!showNote)}
-                  className="text-xs text-foreground font-medium hover:underline"
-                >
-                  {showNote ? 'Hide note' : 'Show note'}
-                </button>
-                {showNote && (
-                  <div className="mt-2 p-3 bg-row-alt rounded-lg text-sm text-foreground whitespace-pre-wrap">
-                    {current.vocab.note}
-                  </div>
-                )}
-              </div>
-            )}
+            <p className="text-xl leading-relaxed text-foreground">{current.en}</p>
           </div>
         ) : (
           <button
@@ -226,31 +148,13 @@ export default function LearnPage({
         )}
       </div>
 
-      {revealed && (
-        <div className="flex gap-2 mb-4">
-          {playlist.audio_url && (
-            <button
-              onClick={playCurrentAudio}
-              className="flex-1 py-2.5 bg-row-alt border border-border text-foreground rounded-lg font-medium hover:bg-border transition"
-            >
-              Play audio
-            </button>
-          )}
+      {revealed && playlist.audio_url && (
+        <div className="mb-4">
           <button
-            onClick={markPracticed}
-            className="flex-1 py-2.5 bg-row-alt border border-border text-foreground rounded-lg font-medium hover:bg-border transition"
+            onClick={playCurrentAudio}
+            className="w-full py-2.5 bg-row-alt border border-border text-foreground rounded-lg font-medium hover:bg-border transition"
           >
-            Practiced ({current.vocab.used || 0})
-          </button>
-          <button
-            onClick={toggleLearned}
-            className={`flex-1 py-2.5 rounded-lg font-medium transition border ${
-              current.vocab.status === 'YES'
-                ? 'bg-foreground text-background border-foreground hover:opacity-80'
-                : 'bg-card text-foreground border-border hover:border-foreground'
-            }`}
-          >
-            {current.vocab.status === 'YES' ? 'Learned' : 'Mark learned'}
+            Play audio
           </button>
         </div>
       )}
@@ -279,7 +183,6 @@ export default function LearnPage({
               onClick={() => {
                 setCurrentIdx(i)
                 setRevealed(false)
-                setShowNote(false)
               }}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
                 i === currentIdx
@@ -288,10 +191,7 @@ export default function LearnPage({
               }`}
             >
               <span className="text-xs text-muted mr-2">{i + 1}.</span>
-              <span className="text-foreground">{item.vocab.vn}</span>
-              {item.vocab.status === 'YES' && (
-                <span className="ml-2 text-xs text-foreground font-bold">·</span>
-              )}
+              <span className="text-foreground">{item.vn}</span>
             </button>
           ))}
         </div>

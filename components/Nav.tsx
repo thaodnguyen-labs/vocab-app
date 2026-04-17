@@ -5,10 +5,8 @@ import { usePathname } from 'next/navigation'
 
 const links = [
   { href: '/', label: 'Home' },
-  { href: '/vocab', label: 'Vocab' },
   { href: '/playlists', label: 'Lists' },
   { href: '/player', label: 'Player' },
-  { href: '/sync', label: 'Sync' },
 ]
 
 export default function Nav() {
@@ -22,8 +20,7 @@ export default function Nav() {
         {links.map((link) => {
           const active =
             pathname === link.href ||
-            (link.href === '/playlists' && pathname.startsWith('/learn')) ||
-            (link.href === '/sync' && pathname === '/import')
+            (link.href === '/playlists' && pathname.startsWith('/learn'))
           return (
             <Link
               key={link.href}

@@ -1,19 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  /* Minimal warm neutral palette */
-  --background: #FAF9F5;      /* warm off-white */
-  --foreground: #1F1F1F;      /* charcoal */
+  /* Warm neutral base */
+  --background: #FAF9F5;
+  --foreground: #1F1F1F;
   --card: #FFFFFF;
-  --primary: #1F1F1F;         /* near-black for primary actions */
+  --primary: #1F1F1F;
   --primary-dark: #000000;
-  --accent: #C77B50;          /* muted terracotta - used sparingly */
-  --success: #5E8D5C;         /* subtle green for success states only */
-  --danger: #B85450;          /* muted red */
-  --border: #E8E4DC;          /* warm light grey */
-  --row-alt: #F5F2EA;         /* very light warm tint */
-  --muted: #737373;           /* medium grey for secondary text */
+  --accent: #C77B50;
+  --success: #5E8D5C;
+  --border: #E8E4DC;
+  --row-alt: #F5F2EA;
+  --muted: #737373;
   --near-white: #FDFCF8;
+
+  /* Brand accents (Duolingo-inspired) */
+  --brand-green: #58CC02;
+  --brand-green-dark: #46A302;
+  --brand-blue: #1CB0F6;
+  --brand-blue-dark: #0E8AC6;
+  --brand-amber: #FFC800;
+  --brand-amber-dark: #D9A800;
+  --brand-rose: #FF4B4B;
+  --brand-rose-dark: #D93838;
+  --brand-purple: #CE82FF;
+  --brand-purple-dark: #A75FD9;
+
+  /* Soft tints for card backgrounds */
+  --tint-green: #E8F8D8;
+  --tint-blue: #DDF2FC;
+  --tint-amber: #FFF3C2;
+  --tint-rose: #FFE2E2;
+  --tint-purple: #F1E1FF;
+
+  /* Danger unified with brand-rose */
+  --danger: #FF4B4B;
 }
 
 @theme inline {
@@ -29,6 +50,24 @@
   --color-row-alt: var(--row-alt);
   --color-muted: var(--muted);
   --color-near-white: var(--near-white);
+
+  --color-brand-green: var(--brand-green);
+  --color-brand-green-dark: var(--brand-green-dark);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-dark: var(--brand-blue-dark);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-amber-dark: var(--brand-amber-dark);
+  --color-brand-rose: var(--brand-rose);
+  --color-brand-rose-dark: var(--brand-rose-dark);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-purple-dark: var(--brand-purple-dark);
+
+  --color-tint-green: var(--tint-green);
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-amber: var(--tint-amber);
+  --color-tint-rose: var(--tint-rose);
+  --color-tint-purple: var(--tint-purple);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

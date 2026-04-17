@@ -1,6 +1,19 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Repeat,
+  Eye,
+  EyeOff,
+  Check,
+  Minus,
+  Plus,
+  Gauge,
+} from 'lucide-react'
 
 export interface CuePoint {
   index: number
@@ -199,16 +212,19 @@ export default function AudioPlayer({
   const currentCue = cuePoints[currentCueIndex]
 
   return (
-    <div className="bg-card rounded-2xl shadow-sm p-6 max-w-lg mx-auto border border-border">
+    <div className="bg-card rounded-2xl shadow-sm p-6 max-w-lg mx-auto border-2 border-tint-amber">
       <audio ref={audioRef} src={audioUrl} preload="auto" />
 
-      <h2 className="text-base font-semibold text-center mb-1 text-foreground">{title}</h2>
-      <p className="text-xs text-muted text-center mb-6">
+      <h2 className="text-base font-bold text-center mb-1 text-foreground flex items-center justify-center gap-2">
+        <Play size={16} className="text-brand-amber-dark" fill="currentColor" />
+        {title}
+      </h2>
+      <p className="text-xs text-muted text-center mb-6 font-medium">
         {cuePoints.length} sentences {loop ? '· looping' : ''}
       </p>
 
-      <div className="bg-row-alt rounded-xl p-5 mb-6 min-h-[120px] flex flex-col justify-center border border-border">
-        <p className="text-xs text-muted mb-1">
+      <div className="bg-tint-amber rounded-xl p-5 mb-6 min-h-[120px] flex flex-col justify-center border-2 border-brand-amber/30">
+        <p className="text-xs text-brand-amber-dark font-bold mb-1">
           {currentCueIndex + 1} / {cuePoints.length}
         </p>
         <p className="text-lg font-medium leading-relaxed mb-2 text-foreground">
@@ -236,23 +252,28 @@ export default function AudioPlayer({
       <div className="flex items-center justify-center gap-6 mb-5">
         <button
           onClick={() => skipTo(currentCueIndex - 1)}
-          className="w-10 h-10 rounded-full bg-row-alt hover:bg-border flex items-center justify-center text-sm font-semibold transition text-foreground"
+          className="w-10 h-10 rounded-full bg-row-alt hover:bg-border flex items-center justify-center transition text-foreground"
           title="Previous sentence"
         >
-          &lt;&lt;
+          <SkipBack size={18} fill="currentColor" />
         </button>
         <button
           onClick={togglePlay}
-          className="w-14 h-14 rounded-full bg-foreground text-background flex items-center justify-center text-2xl hover:opacity-80 transition shadow-sm font-bold"
+          className="w-16 h-16 rounded-full bg-brand-green text-white border-b-4 border-brand-green-dark flex items-center justify-center hover:brightness-105 active:border-b-2 active:translate-y-[2px] transition"
+          aria-label={isPlaying ? 'Pause' : 'Play'}
         >
-          {isPlaying ? '||' : '>'}
+          {isPlaying ? (
+            <Pause size={26} fill="currentColor" />
+          ) : (
+            <Play size={26} fill="currentColor" className="ml-0.5" />
+          )}
         </button>
         <button
           onClick={() => skipTo(currentCueIndex + 1)}
-          className="w-10 h-10 rounded-full bg-row-alt hover:bg-border flex items-center justify-center text-sm font-semibold transition text-foreground"
+          className="w-10 h-10 rounded-full bg-row-alt hover:bg-border flex items-center justify-center transition text-foreground"
           title="Next sentence"
         >
-          &gt;&gt;
+          <SkipForward size={18} fill="currentColor" />
         </button>
       </div>
 
@@ -261,25 +282,26 @@ export default function AudioPlayer({
         <button
           onClick={() => adjustSpeed(-SPEED_STEP)}
           disabled={speed <= MIN_SPEED}
-          className="w-8 h-8 rounded-full bg-card hover:bg-border disabled:opacity-30 flex items-center justify-center text-sm font-bold transition text-foreground"
+          className="w-8 h-8 rounded-full bg-card hover:bg-border disabled:opacity-30 flex items-center justify-center transition text-foreground"
           title="Slower"
         >
-          −
+          <Minus size={14} />
         </button>
         <button
           onClick={() => setSpeed(DEFAULT_SPEED)}
-          className="text-xs font-mono font-medium text-foreground px-3 min-w-[58px] text-center hover:text-accent transition"
+          className="text-xs font-mono font-bold text-foreground px-3 min-w-[70px] text-center hover:text-brand-amber-dark transition inline-flex items-center justify-center gap-1"
           title="Click to reset to 0.9x"
         >
+          <Gauge size={12} />
           {speed.toFixed(2)}x
         </button>
         <button
           onClick={() => adjustSpeed(SPEED_STEP)}
           disabled={speed >= MAX_SPEED}
-          className="w-8 h-8 rounded-full bg-card hover:bg-border disabled:opacity-30 flex items-center justify-center text-sm font-bold transition text-foreground"
+          className="w-8 h-8 rounded-full bg-card hover:bg-border disabled:opacity-30 flex items-center justify-center transition text-foreground"
           title="Faster"
         >
-          +
+          <Plus size={14} />
         </button>
       </div>
 
@@ -287,22 +309,24 @@ export default function AudioPlayer({
       <div className="flex justify-center gap-2">
         <button
           onClick={() => setLoop(!loop)}
-          className={`text-xs px-3 py-1.5 rounded-full transition font-medium border ${
+          className={`text-xs px-3 py-1.5 rounded-full transition font-bold border-2 inline-flex items-center gap-1.5 ${
             loop
-              ? 'bg-foreground text-background border-foreground'
+              ? 'bg-brand-blue text-white border-brand-blue-dark'
               : 'bg-card text-muted border-border'
           }`}
         >
+          <Repeat size={12} />
           Loop {loop ? 'on' : 'off'}
         </button>
         <button
           onClick={() => setShowVN(!showVN)}
-          className={`text-xs px-3 py-1.5 rounded-full transition font-medium border ${
+          className={`text-xs px-3 py-1.5 rounded-full transition font-bold border-2 inline-flex items-center gap-1.5 ${
             showVN
-              ? 'bg-foreground text-background border-foreground'
+              ? 'bg-brand-purple text-white border-brand-purple-dark'
               : 'bg-card text-muted border-border'
           }`}
         >
+          {showVN ? <Eye size={12} /> : <EyeOff size={12} />}
           VN {showVN ? 'on' : 'off'}
         </button>
       </div>
@@ -312,12 +336,13 @@ export default function AudioPlayer({
           <button
             onClick={confirmLearned}
             disabled={confirming || confirmed}
-            className={`w-full py-3 rounded-lg font-semibold transition border ${
+            className={`w-full py-3 rounded-xl font-bold transition inline-flex items-center justify-center gap-2 ${
               confirmed
-                ? 'bg-row-alt text-muted border-border cursor-not-allowed'
-                : 'bg-foreground text-background border-foreground hover:opacity-80 disabled:opacity-60'
+                ? 'bg-tint-green text-brand-green-dark border-2 border-brand-green/30 cursor-not-allowed'
+                : 'bg-brand-green text-white border-b-4 border-brand-green-dark hover:brightness-105 active:border-b-2 active:translate-y-[2px] disabled:opacity-60'
             }`}
           >
+            <Check size={16} />
             {confirming
               ? 'Pushing to Sheet...'
               : confirmed

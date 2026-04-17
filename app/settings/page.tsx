@@ -185,10 +185,11 @@ function doGet() {
     };
   });
   // Summary cells from row 1 (used-count buckets)
+  // Sheet layout: N1 = used 7+, O1 = used 5+, P1 = used 3+
   const summary = {
-    used3: sheet.getRange("N1").getValue(),
+    used3: sheet.getRange("P1").getValue(),
     used5: sheet.getRange("O1").getValue(),
-    used7: sheet.getRange("P1").getValue(),
+    used7: sheet.getRange("N1").getValue(),
   };
   return ContentService
     .createTextOutput(JSON.stringify({ data: rows, summary: summary }))

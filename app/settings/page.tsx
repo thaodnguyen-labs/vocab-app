@@ -184,12 +184,16 @@ function doGet() {
       used:   r[8],
     };
   });
-  // Summary cells from row 1 (used-count buckets)
-  // Sheet layout: N1 = used 7+, O1 = used 5+, P1 = used 3+
+  // Summary cells from row 1 (used-count buckets). Cells look like
+  // "3️⃣ 42" — parse the trailing number.
+  function parseCount(v) {
+    var nums = String(v).match(/\d+/g);
+    return nums && nums.length > 0 ? Number(nums[nums.length - 1]) : 0;
+  }
   const summary = {
-    used3: sheet.getRange("P1").getValue(),
-    used5: sheet.getRange("O1").getValue(),
-    used7: sheet.getRange("N1").getValue(),
+    used3: parseCount(sheet.getRange("P1").getValue()),
+    used5: parseCount(sheet.getRange("O1").getValue()),
+    used7: parseCount(sheet.getRange("N1").getValue()),
   };
   return ContentService
     .createTextOutput(JSON.stringify({ data: rows, summary: summary }))

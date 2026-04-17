@@ -7,6 +7,7 @@ const links = [
   { href: '/', label: 'Home' },
   { href: '/playlists', label: 'Lists' },
   { href: '/player', label: 'Player' },
+  { href: '/settings', label: 'Source' },
 ]
 
 export default function Nav() {
